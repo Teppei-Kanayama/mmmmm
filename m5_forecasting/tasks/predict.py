@@ -5,7 +5,7 @@ import gokart
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing, metrics
-import lightgbm as lgb
+# import lightgbm as lgb
 
 from m5_forecasting.data.load import LoadInputData
 from m5_forecasting.data.preprocess import PreprocessInputData

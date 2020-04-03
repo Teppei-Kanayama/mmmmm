@@ -26,7 +26,7 @@ class PreprocessInputData(gokart.TaskOnKart):
 
     @classmethod
     def _run(cls, calendar: pd.DataFrame, sell_prices: pd.DataFrame, sales_train_validation: pd.DataFrame,
-             submission: pd.DataFrame, nrows=55000000, merge=False) -> pd.DataFrame:
+             submission: pd.DataFrame, nrows=55000000) -> pd.DataFrame:
         # melt sales data, get it ready for training
         sales_train_validation = pd.melt(sales_train_validation,
                                          id_vars=['id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'],
@@ -88,16 +88,12 @@ class PreprocessInputData(gokart.TaskOnKart):
         # delete test2 for now
         data = data[data['part'] != 'test2']
 
-        if merge:
-            # notebook crash with the entire dataset (maybee use tensorflow, dask, pyspark xD)
-            data = pd.merge(data, calendar, how='left', left_on=['day'], right_on=['d'])
-            data.drop(['d', 'day'], inplace=True, axis=1)
-            # get the sell price data (this feature should be very important)
-            data = data.merge(sell_prices, on=['store_id', 'item_id', 'wm_yr_wk'], how='left')
-            print('Our final dataset to train has {} rows and {} columns'.format(data.shape[0], data.shape[1]))
-        else:
-            pass
-
+        # notebook crash with the entire dataset (maybee use tensorflow, dask, pyspark xD)
+        data = pd.merge(data, calendar, how='left', left_on=['day'], right_on=['d'])
+        data.drop(['d', 'day'], inplace=True, axis=1)
+        # get the sell price data (this feature should be very important)
+        data = data.merge(sell_prices, on=['store_id', 'item_id', 'wm_yr_wk'], how='left')
+        print('Our final dataset to train has {} rows and {} columns'.format(data.shape[0], data.shape[1]))
         gc.collect()
 
         return data

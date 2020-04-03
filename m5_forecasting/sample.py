@@ -2,7 +2,7 @@ from logging import getLogger
 
 import gokart
 
-from m5_forecasting.data.preprocess import PreprocessInputData
+from m5_forecasting.tasks.predict import Predict
 
 logger = getLogger(__name__)
 
@@ -11,10 +11,10 @@ class Sample(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     def requires(self):
-        return PreprocessInputData()
+        return Predict()
 
     def run(self):
-        data = self.load_data_frame()
+        output = self.load_data_frame()
         import pdb; pdb.set_trace()
 
 
