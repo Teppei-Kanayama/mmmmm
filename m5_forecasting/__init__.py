@@ -1,1 +1,1 @@
-from m5_forecasting.sample import Sample
+from m5_forecasting.predict import Predict

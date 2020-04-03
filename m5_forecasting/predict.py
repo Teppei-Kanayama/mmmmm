@@ -10,7 +10,7 @@ from m5_forecasting.data.load import LoadInputData
 logger = getLogger(__name__)
 
 
-class Sample(gokart.TaskOnKart):
+class Predict(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     def output(self):
@@ -27,3 +27,5 @@ class Sample(gokart.TaskOnKart):
     def run(self):
         output = self.load_data_frame()
         self.dump(output)
+
+# python main.py m5-forecasting.Predict --local-scheduler

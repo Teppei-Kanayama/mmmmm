@@ -19,20 +19,18 @@ class RunLGBM(gokart.TaskOnKart):
     raw_data_task = gokart.TaskInstanceParameter()
 
     def requires(self):
-        return dict(preprocessed_data=self.feature_task, raw_data=self.raw_data_task)
+        return dict(feature=self.feature_task, raw_data=self.raw_data_task)
 
     def run(self):
-        data = self.load_data_frame('preprocessed_data')
+        feature = self.load_data_frame('feature')
         submission = self.load('raw_data')['sample_submission']
-        output = self._run(data, submission)
+        output = self._run(feature, submission)
         self.dump(output)
 
     @classmethod
-    def _run(cls, data: pd.DataFrame, submission: pd.DataFrame) -> pd.DataFrame:
-        data = cls._transform(data)
-        data = cls._simple_fe(data)
-        data = reduce_mem_usage(data)
-        test = cls._run_lgb(data)
+    def _run(cls, feature: pd.DataFrame, submission: pd.DataFrame) -> pd.DataFrame:
+        feature = reduce_mem_usage(feature)
+        test = cls._run_lgb(feature)
         output = cls._predict(test, submission)
         return output
 
@@ -82,7 +80,7 @@ class RunLGBM(gokart.TaskOnKart):
         return test
 
     @staticmethod
-    def predict(test: pd.DataFrame, submission: pd.DataFrame) -> pd.DataFrame:
+    def _predict(test: pd.DataFrame, submission: pd.DataFrame) -> pd.DataFrame:
         predictions = test[['id', 'date', 'demand']]
         predictions = pd.pivot(predictions, index='id', columns='date', values='demand').reset_index()
         predictions.columns = ['id'] + ['F' + str(i + 1) for i in range(28)]

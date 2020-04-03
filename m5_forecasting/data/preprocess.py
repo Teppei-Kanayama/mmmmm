@@ -137,7 +137,7 @@ class FeatureEngineering(gokart.TaskOnKart):
         self.dump(output)
 
     @staticmethod
-    def _simple_fe(data: pd.DataFrame) -> pd.DataFrame:
+    def _run(data: pd.DataFrame) -> pd.DataFrame:
         # rolling demand features
         data['lag_t28'] = data.groupby(['id'])['demand'].transform(lambda x: x.shift(28))
         data['lag_t29'] = data.groupby(['id'])['demand'].transform(lambda x: x.shift(29))
