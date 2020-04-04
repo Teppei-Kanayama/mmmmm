@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e23429ead5bcd578dbd07ed03e8b583c1ae2940bd4b3e6b41243f1aa1eaac153"
+            "sha256": "55a7412fe54758fa158db7fd06ddc58ed6b4ab04bffafefe49f5c994fdf91203"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -49,17 +49,17 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:803b2d69c4d2176c2c1b762cb236fb7c1bb9c2847f2acfe23f327ea084d6f3b1",
-                "sha256:c112dd26643a42519500c4abe0b376585274f07bf9f1ee4dbf2978284d388141"
+                "sha256:57397f9ad3e9afc17e6100a38c6e631b6545aabc7f8c38b86ff2c6f5931d0ebf",
+                "sha256:911994ef46595e8ab9f08eee6b666caea050937b96d54394292e958330cd7ad5"
             ],
-            "version": "==1.12.35"
+            "version": "==1.12.36"
         },
         "botocore": {
             "hashes": [
-                "sha256:4fded7e18681bc9249c6ad930602a394819a5e70cb62dbec46ed92800c2fc701",
-                "sha256:69a0dc4c331d62307b1c09e78e7c6da84e112ab5b37625b966eada4ffc31527c"
+                "sha256:5fc5e8629b5375d591a47d05baaff6ccdf5c3b617aad1e14286be458092c9e53",
+                "sha256:d2233e19b6a60792185b15fe4cd8f92c5579298e5079daf17f66f6e639585e3a"
             ],
-            "version": "==1.15.35"
+            "version": "==1.15.36"
         },
         "cachetools": {
             "hashes": [
@@ -193,6 +193,16 @@
                 "sha256:fccefc0d36a38c57b7bd233a9b485e2f1eb71903ca7ad7adacad6c28a56d62d2"
             ],
             "version": "==1.2.0"
+        },
+        "lightgbm": {
+            "hashes": [
+                "sha256:5f6f4b5b9cc9e46283d275d691f2d75382c1a93c38c7211949e4a5dfd40def3d",
+                "sha256:951c4853d9fd824aff24dea10ffc9cc91f391f28a405160dfc63a68acc0417b1",
+                "sha256:ba378fe3a4c312d2623161807604af6ff35c6ebfb379dfd285f896179efd1c46",
+                "sha256:eb7dabf3bbb2cafa32efed5b389313ef38d92b9d2ae02931bd880ae115d8a3cb"
+            ],
+            "index": "pypi",
+            "version": "==2.1.2"
         },
         "lockfile": {
             "hashes": [

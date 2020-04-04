@@ -5,7 +5,7 @@ import gokart
 import pandas as pd
 import numpy as np
 from sklearn import metrics
-# import lightgbm as lgb
+import lightgbm as lgb
 
 from m5_forecasting.data.utils import reduce_mem_usage
 
