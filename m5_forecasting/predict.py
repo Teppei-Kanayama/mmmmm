@@ -5,8 +5,10 @@ import pandas as pd
 import numpy as np
 from lightgbm import Booster
 
-from m5_forecasting.data.preprocess import PreprocessCalendar, PreprocessSellingPrice, PreprocessSales, MergeData, \
-    MakeFeature
+from m5_forecasting.data.calendar import PreprocessCalendar
+from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
+from m5_forecasting.data.sales import PreprocessSales
+from m5_forecasting.data.selling_price import PreprocessSellingPrice
 from m5_forecasting.tasks.run_lgbm import TrainLGBM
 
 from m5_forecasting.data.load import LoadInputData
@@ -33,14 +35,14 @@ class Predict(gokart.TaskOnKart):
         return dict(model=model_task, sample_submission=sample_submission_data_task, feature=feature_task)
 
     def run(self):
-        model = self.load('model')
+        model = self.load('model')['model']
         sample_submission = self.load('sample_submission')
         feature = self.load_data_frame('feature')
         output = self._run(model, feature, sample_submission)
         self.dump(output)
 
     @staticmethod
-    def _run(model: Booster, feature: pd.DataFrame, sample_submission: pd.DataFrame) -> pd.DataFrame:
+    def _run(model: Booster, feature: pd.DataFrame, sample_submission: pd.DataFrame, dark_magic=False) -> pd.DataFrame:
         test = feature[(feature['d'] >= 1914)]
         test = test.assign(id=test.id + "_" + np.where(test.d <= 1941, "validation", "evaluation"),
                            F="F" + (test.d - 1913 - 28 * (test.d > 1941)).astype("str"))
@@ -52,13 +54,11 @@ class Predict(gokart.TaskOnKart):
                     "rolling_mean_t7", "rolling_mean_t30", "rolling_mean_t60", "rolling_mean_t90", "rolling_mean_t180",
                     "rolling_std_t7", "rolling_std_t30", "item_id", "dept_id", "cat_id", "store_id", "state_id"]
 
-        # TODO: move this line
-        # feature importance
-        df = pd.DataFrame(dict(name=features, imp=model.feature_importance(importance_type='gain'))).sort_values(by='imp', ascending=False)
-        df.to_csv('resources/feature_importance.csv', index=False)
+        pred = model.predict(test[features])
 
-        y_pred = model.predict(test[features])
-        test['demand'] = y_pred
+        if dark_magic:
+            pred = pred / pred[test["id"].str.endswith("validation")].mean() * 1.447147
+        test['demand'] = pred
 
         submission = test.pivot(index="id", columns="F", values="demand").reset_index()[sample_submission.columns]
         return submission

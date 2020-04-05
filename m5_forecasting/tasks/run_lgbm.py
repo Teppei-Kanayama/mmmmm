@@ -1,5 +1,6 @@
 import gc
 from logging import getLogger
+from typing import Tuple
 
 import gokart
 import pandas as pd
@@ -20,15 +21,18 @@ class TrainLGBM(gokart.TaskOnKart):
         return self.feature_task
 
     def output(self):
-        return self.make_target(relative_file_path='model/lgb.pkl')
+        model = self.make_target(relative_file_path='model/lgb.pkl')
+        feature_importance = self.make_target(relative_file_path='model/feature_importance.csv')
+        return dict(model=model, feature_importance=feature_importance)
 
     def run(self):
         data = self.load_data_frame()
-        model = self._run(data)
-        self.dump(model)
+        model, feature_importance = self._run(data)
+        self.dump(model, 'model')
+        self.dump(feature_importance, 'feature_importance')
 
     @staticmethod
-    def _run(data: pd.DataFrame) -> Booster:
+    def _run(data: pd.DataFrame) -> Tuple[Booster, pd.DataFrame]:
 
         # define list of features
         features = ["wday", "month", "year",
@@ -62,4 +66,8 @@ class TrainLGBM(gokart.TaskOnKart):
         val_pred = model.predict(x_val[features])
         val_score = np.sqrt(metrics.mean_squared_error(val_pred, y_val))
         print(f'Our val rmse score is {val_score}')
-        return model
+
+        feature_importance = pd.DataFrame(
+            dict(name=features, imp=model.feature_importance(importance_type='gain'))).sort_values(by='imp', ascending=False)
+
+        return model, feature_importance

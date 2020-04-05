@@ -14,5 +14,4 @@ class LoadInputData(gokart.TaskOnKart):
 
     def output(self):
         input_file_directory = 'input'
-        # sample_submission = self.make_target('input/sample_submission.csv', use_unique_id=False)
         return self.make_target(os.path.join(input_file_directory, self.filename), use_unique_id=False)
