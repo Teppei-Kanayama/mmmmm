@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import List
 
 import gokart
 import pandas as pd
@@ -37,28 +38,19 @@ class Predict(gokart.TaskOnKart):
 
     def run(self):
         model = self.load('model')['model']
+        feature_columns = self.load('model')['feature_columns']
         sample_submission = self.load('sample_submission')
         feature = self.load_data_frame('feature')
-        output = self._run(model, feature, sample_submission)
+        output = self._run(model, feature_columns, feature, sample_submission)
         self.dump(output)
 
     @staticmethod
-    def _run(model: Booster, feature: pd.DataFrame, sample_submission: pd.DataFrame, dark_magic=False) -> pd.DataFrame:
+    def _run(model: Booster, feature_columns: List[str], feature: pd.DataFrame, sample_submission: pd.DataFrame, dark_magic=False) -> pd.DataFrame:
         test = feature[(feature['d'] >= 1914)]
-
-        # define list of features
-        # TODO: delete these lines
-        features = ["wday", "month", "year", "event_name_1", "event_type_1", "snap_CA", "snap_TX", "snap_WI",
-                    "sell_price", "sell_price_rel_diff", "sell_price_cumrel", "sell_price_roll_sd7", "lag_t28",
-                    "rolling_mean_t7", "rolling_mean_t30", "rolling_mean_t60", "rolling_mean_t90", "rolling_mean_t180",
-                    "rolling_std_t7", "rolling_std_t30", "item_id", "dept_id", "cat_id", "store_id", "state_id"]
-
-        # pred = model.predict(test[features])
-        pred = model.predict(test.drop(['demand', 'id', 'd'], axis=1))
+        pred = model.predict(test[feature_columns], axis=1)
         if dark_magic:
             pred = pred / pred[test["id"].str.endswith("validation")].mean() * 1.447147
         test['demand'] = pred
-
         test = test.assign(id=test.id + "_" + np.where(test.d <= 1941, "validation", "evaluation"),
                            F="F" + (test.d - 1913 - 28 * (test.d > 1941)).astype("str"))
         submission = test.pivot(index="id", columns="F", values="demand").reset_index()[sample_submission.columns]
