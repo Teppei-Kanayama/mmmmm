@@ -4,10 +4,36 @@ import pandas as pd
 import gc
 import gokart
 from sklearn import preprocessing
+from sklearn.preprocessing import OrdinalEncoder
 
+from m5_forecasting.data.load import LoadInputData
 from m5_forecasting.data.utils import reduce_mem_usage
 
 logger = getLogger(__name__)
+
+
+class PreprocessCalendar(gokart.TaskOnKart):
+    task_namespace = 'm5-forecasting'
+
+    def requires(self):
+        return LoadInputData(filename='calendar.csv')
+
+    def run(self):
+        data = self.load_data_frame()
+        output = self._run(data)
+        self.dump(output)
+
+    @staticmethod
+    def _run(df: pd.DataFrame) -> pd.DataFrame:
+        # dateはd, weekdayはwdayと同じ情報なので落とす。event_name_2, event_type_2はなぜ使わない？
+        df = df.drop(["date", "weekday", "event_name_2", "event_type_2"], axis=1)
+        df = df.assign(d=df['d'].str[2:].astype(int))  # 'd_100' などの日付を100に変換する
+        to_ordinal = ["event_name_1", "event_type_1"]
+        df[to_ordinal] = df[to_ordinal].fillna("1")  # なんでもいいから埋める
+        df[to_ordinal] = OrdinalEncoder(dtype="int").fit_transform(df[to_ordinal]) + 1  # 'ValentinesDay'などの文字列を数字に対応させる
+        to_int8 = ["wday", "month", "snap_CA", "snap_TX", "snap_WI"] + to_ordinal
+        df[to_int8] = df[to_int8].astype("int8")  # int64は無駄なのでint8に落とす
+        return df  # columns: {'wm_yr_wk', 'wday', 'month', 'year', 'd', 'event_name_1', 'event_type_1', 'snap_CA', 'snap_TX', 'snap_WI'}
 
 
 class MergeInputData(gokart.TaskOnKart):
@@ -28,6 +54,13 @@ class MergeInputData(gokart.TaskOnKart):
     @classmethod
     def _run(cls, calendar: pd.DataFrame, sell_prices: pd.DataFrame, sales_train_validation: pd.DataFrame,
              submission: pd.DataFrame, nrows=55000000) -> pd.DataFrame:
+
+        drop_d = 1000
+        sales_train_validation = sales_train_validation.drop(["d_" + str(i + 1) for i in range(drop_d - 1)], axis=1)
+        sales_train_validation = sales_train_validation.assign(id=sales_train_validation.id.str.replace("_validation", ""))
+        sales_train_validation = sales_train_validation.reindex(columns=sales_train_validation.columns.tolist() +
+                                                                        ["d_" + str(1913 + i + 1) for i in range(2 * 28)])
+
         # melt sales data, get it ready for training
         sales_train_validation = pd.melt(sales_train_validation,
                                          id_vars=['id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'],
@@ -81,7 +114,7 @@ class MergeInputData(gokart.TaskOnKart):
         del sales_train_validation, test1, test2
 
         # get only a sample for fst training
-        data = data.loc[nrows:]
+        # data = data.loc[nrows:]
 
         # drop some calendar features
         calendar.drop(['weekday', 'wday', 'month', 'year'], inplace=True, axis=1)
@@ -93,6 +126,7 @@ class MergeInputData(gokart.TaskOnKart):
         data = pd.merge(data, calendar, how='left', left_on=['day'], right_on=['d'])
         data.drop(['d', 'day'], inplace=True, axis=1)
         # get the sell price data (this feature should be very important)
+
         data = data.merge(sell_prices, on=['store_id', 'item_id', 'wm_yr_wk'], how='left')
         print('Our final dataset to train has {} rows and {} columns'.format(data.shape[0], data.shape[1]))
         gc.collect()
@@ -145,6 +179,7 @@ class FeatureEngineering(gokart.TaskOnKart):
         data['rolling_mean_t7'] = data.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(7).mean())
         data['rolling_std_t7'] = data.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(7).std())
         data['rolling_mean_t30'] = data.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(30).mean())
+        data['rolling_mean_t60'] = data.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
         data['rolling_mean_t90'] = data.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
         data['rolling_mean_t180'] = data.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(180).mean())
         data['rolling_std_t30'] = data.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(30).std())
@@ -152,6 +187,17 @@ class FeatureEngineering(gokart.TaskOnKart):
         data['rolling_kurt_t30'] = data.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(30).kurt())
 
         # price features
+        def zapsmall(z, tol=1e-6):
+            z[abs(z) < tol] = 0
+            return z
+
+        gr = data.groupby(["store_id", "item_id"])["sell_price"]
+        data["sell_price_rel_diff"] = gr.pct_change()
+        data["sell_price_cumrel"] = (gr.shift(0) - gr.cummin()) / (1 + gr.cummax() - gr.cummin())
+        data["sell_price_roll_sd7"] = zapsmall(gr.transform(lambda x: x.rolling(7).std()))
+        to_float32 = ["sell_price", "sell_price_rel_diff", "sell_price_cumrel", "sell_price_roll_sd7"]
+        data[to_float32] = data[to_float32].astype("float32")
+
         data['lag_price_t1'] = data.groupby(['id'])['sell_price'].transform(lambda x: x.shift(1))
         data['price_change_t1'] = (data['lag_price_t1'] - data['sell_price']) / (data['lag_price_t1'])
         data['rolling_price_max_t365'] = data.groupby(['id'])['sell_price'].transform(
