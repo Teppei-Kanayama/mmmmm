@@ -4,7 +4,8 @@ import gokart
 import pandas as pd
 from lightgbm import Booster
 
-from m5_forecasting.data.preprocess import MergeInputData, LabelEncode, FeatureEngineering, PreprocessCalendar
+from m5_forecasting.data.preprocess import MergeInputData, LabelEncode, FeatureEngineering, PreprocessCalendar, \
+    PreprocessSellingPrice
 from m5_forecasting.data.utils import reduce_mem_usage
 from m5_forecasting.tasks.run_lgbm import TrainLGBM
 
@@ -26,7 +27,7 @@ class Predict(gokart.TaskOnKart):
         # feature_task = FeatureEngineering(data_task=merged_data_task)
         # model_task = TrainLGBM(feature_task=feature_task)
         # return dict(model=model_task, raw_data=input_data_task, feature=feature_task)
-        return PreprocessCalendar()
+        return PreprocessSellingPrice()
 
     def run(self):
         model = self.load('model')
