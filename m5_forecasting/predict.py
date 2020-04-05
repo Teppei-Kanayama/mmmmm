@@ -4,8 +4,7 @@ import gokart
 import pandas as pd
 from lightgbm import Booster
 
-from m5_forecasting.data.preprocess import MergeInputData, LabelEncode, FeatureEngineering, PreprocessCalendar, \
-    PreprocessSellingPrice
+from m5_forecasting.data.preprocess import PreprocessCalendar, PreprocessSellingPrice, PreprocessSales, MergeData
 from m5_forecasting.data.utils import reduce_mem_usage
 from m5_forecasting.tasks.run_lgbm import TrainLGBM
 
@@ -21,13 +20,18 @@ class Predict(gokart.TaskOnKart):
         return self.make_target('submission.csv', use_unique_id=False)
 
     def requires(self):
-        # input_data_task = LoadInputData()
-        # merged_data_task = MergeInputData(data_task=input_data_task)
+        calendar_data_task = PreprocessCalendar()
+        selling_price_data_task = PreprocessSellingPrice()
+        sales_data_task = PreprocessSales()
+        merged_data_task = MergeData(calendar_data_task=calendar_data_task,
+                                     selling_price_data_task=selling_price_data_task,
+                                     sales_data_task=sales_data_task)
+
         # # label_encode_task = LabelEncode(data_task=merged_data_task)
         # feature_task = FeatureEngineering(data_task=merged_data_task)
         # model_task = TrainLGBM(feature_task=feature_task)
         # return dict(model=model_task, raw_data=input_data_task, feature=feature_task)
-        return PreprocessSellingPrice()
+        return merged_data_task
 
     def run(self):
         model = self.load('model')
