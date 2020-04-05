@@ -2,11 +2,11 @@ from logging import getLogger
 
 import gokart
 import pandas as pd
+import numpy as np
 from lightgbm import Booster
 
 from m5_forecasting.data.preprocess import PreprocessCalendar, PreprocessSellingPrice, PreprocessSales, MergeData, \
     MakeFeature
-from m5_forecasting.data.utils import reduce_mem_usage
 from m5_forecasting.tasks.run_lgbm import TrainLGBM
 
 from m5_forecasting.data.load import LoadInputData
@@ -40,31 +40,27 @@ class Predict(gokart.TaskOnKart):
         self.dump(output)
 
     @staticmethod
-    def _run(model: Booster, feature: pd.DataFrame, submission: pd.DataFrame) -> pd.DataFrame:
-        feature = reduce_mem_usage(feature)
+    def _run(model: Booster, feature: pd.DataFrame, sample_submission: pd.DataFrame) -> pd.DataFrame:
         test = feature[(feature['d'] >= 1914)]
+        test = test.assign(id=test.id + "_" + np.where(test.d <= 1941, "validation", "evaluation"),
+                           F="F" + (test.d - 1913 - 28 * (test.d > 1941)).astype("str"))
 
         # define list of features
+        # TODO: delete these lines
         features = ["wday", "month", "year", "event_name_1", "event_type_1", "snap_CA", "snap_TX", "snap_WI",
                     "sell_price", "sell_price_rel_diff", "sell_price_cumrel", "sell_price_roll_sd7", "lag_t28",
                     "rolling_mean_t7", "rolling_mean_t30", "rolling_mean_t60", "rolling_mean_t90", "rolling_mean_t180",
                     "rolling_std_t7", "rolling_std_t30", "item_id", "dept_id", "cat_id", "store_id", "state_id"]
 
+        # TODO: move this line
+        # feature importance
         df = pd.DataFrame(dict(name=features, imp=model.feature_importance(importance_type='gain'))).sort_values(by='imp', ascending=False)
         df.to_csv('resources/feature_importance.csv', index=False)
 
         y_pred = model.predict(test[features])
         test['demand'] = y_pred
 
-        predictions = test[['id', 'd', 'demand']]
-        predictions = pd.pivot(predictions, index='id', columns='d', values='demand').reset_index()
-        predictions.columns = ['id'] + ['F' + str(i + 1) for i in range(28)]
-
-        evaluation_rows = [row for row in submission['id'] if 'evaluation' in row]
-        evaluation = submission[submission['id'].isin(evaluation_rows)]
-
-        validation = submission[['id']].merge(predictions, on='id')
-        final = pd.concat([validation, evaluation])
-        return final
+        submission = test.pivot(index="id", columns="F", values="demand").reset_index()[sample_submission.columns]
+        return submission
 
 # python main.py m5-forecasting.Predict --local-scheduler

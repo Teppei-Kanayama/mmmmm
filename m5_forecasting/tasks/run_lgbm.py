@@ -7,9 +7,6 @@ import numpy as np
 from lightgbm import Booster
 from sklearn import metrics
 import lightgbm as lgb
-import matplotlib.pyplot as plt
-
-from m5_forecasting.data.utils import reduce_mem_usage
 
 logger = getLogger(__name__)
 
