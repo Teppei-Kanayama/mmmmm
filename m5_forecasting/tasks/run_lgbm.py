@@ -32,20 +32,20 @@ class TrainLGBM(gokart.TaskOnKart):
 
     @staticmethod
     def _run(data: pd.DataFrame) -> Booster:
-        data = reduce_mem_usage(data)
 
         # define list of features
-        features = ['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id', 'year', 'month', 'week', 'day', 'dayofweek',
-                    'event_name_1', 'event_type_1', 'event_name_2', 'event_type_2', 'snap_CA', 'snap_TX', 'snap_WI',
-                    'sell_price', 'lag_t28', 'lag_t29', 'lag_t30', 'rolling_mean_t7', 'rolling_std_t7',
-                    'rolling_mean_t30', 'rolling_mean_t60', 'rolling_mean_t90', 'rolling_mean_t180', 'rolling_std_t30', 'price_change_t1',
-                    'price_change_t365', 'rolling_price_std_t7', 'rolling_price_std_t30', 'rolling_skew_t30',
-                    'rolling_kurt_t30']
+        features = ["wday", "month", "year",
+                    "event_name_1", "event_type_1",
+                    "snap_CA", "snap_TX", "snap_WI",
+                    "sell_price", "sell_price_rel_diff", "sell_price_cumrel", "sell_price_roll_sd7",
+                    "lag_t28", "rolling_mean_t7", "rolling_mean_t30", "rolling_mean_t60",
+                    "rolling_mean_t90", "rolling_mean_t180", "rolling_std_t7", "rolling_std_t30",
+                    "item_id", "dept_id", "cat_id", "store_id", "state_id"]
 
         # going to evaluate with the last 28 days
-        x_train = data[data['date'] <= '2016-03-27']
+        x_train = data[data['d'] < 1914 - 28]
         y_train = x_train['demand']
-        x_val = data[(data['date'] > '2016-03-27') & (data['date'] <= '2016-04-24')]
+        x_val = data[(data['d'] < 1914) & (data['d'] >= 1914 - 28)]
         y_val = x_val['demand']
         del data
         gc.collect()
@@ -60,7 +60,7 @@ class TrainLGBM(gokart.TaskOnKart):
 
         del x_train, y_train
 
-        model = lgb.train(params, train_set, num_boost_round=2000, early_stopping_rounds=400,
+        model = lgb.train(params, train_set, num_boost_round=5000, early_stopping_rounds=400,
                           valid_sets=[train_set, val_set], verbose_eval=100)
         val_pred = model.predict(x_val[features])
         val_score = np.sqrt(metrics.mean_squared_error(val_pred, y_val))

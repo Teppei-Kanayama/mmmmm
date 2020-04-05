@@ -5,6 +5,7 @@ import gc
 import gokart
 from sklearn import preprocessing
 from sklearn.preprocessing import OrdinalEncoder
+from tqdm import tqdm
 
 from m5_forecasting.data.load import LoadInputData
 from m5_forecasting.data.utils import reduce_mem_usage
@@ -147,6 +148,25 @@ class MergeData(gokart.TaskOnKart):
 
         return sales
 
+
+class MakeFeature(gokart.TaskOnKart):
+    task_namespace = 'm5-forecasting'
+
+    merged_data_task = gokart.TaskInstanceParameter()
+
+    def requires(self):
+        return self.merged_data_task
+
+    def run(self):
+        data = self.load_data_frame()
+        self.dump(self._run(data))
+
+    @staticmethod
+    def _run(data):
+        for i, v in tqdm(enumerate(["item_id", "dept_id", "store_id", "cat_id", "state_id"])):
+            data[v] = OrdinalEncoder(dtype="int").fit_transform(data[[v]]).astype("int16") + 1
+        gc.collect()
+        return data
 
 # class MergeInputData(gokart.TaskOnKart):
 #     task_namespace = 'm5-forecasting'
