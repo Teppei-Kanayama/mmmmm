@@ -41,7 +41,7 @@ class PreprocessCalendar(gokart.TaskOnKart):
 
         # dateはd, weekdayはwdayと同じ情報なので落とす。
         # event_name_2, event_type_2はなぜ使わない？
-        df = df.drop(["weekday", "event_name_2", "event_type_2"], axis=1)
+        df = df.drop(["date", "weekday", "event_name_2", "event_type_2"], axis=1)
         return df
 
         # original columns
