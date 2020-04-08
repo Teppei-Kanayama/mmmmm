@@ -2,7 +2,6 @@ from logging import getLogger
 from typing import List
 
 import gokart
-import luigi
 import pandas as pd
 import numpy as np
 from lightgbm import Booster
@@ -58,3 +57,5 @@ class Predict(gokart.TaskOnKart):
         return submission
 
 # python main.py m5-forecasting.Predict --local-scheduler
+# DATA_SIZE=full python main.py m5-forecasting.Predict --local-scheduler
+# DATA_SIZE=small python main.py m5-forecasting.Predict --local-scheduler

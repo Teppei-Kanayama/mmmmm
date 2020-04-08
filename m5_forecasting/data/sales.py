@@ -1,5 +1,6 @@
 from logging import getLogger
 
+import luigi
 import pandas as pd
 import gokart
 
@@ -10,6 +11,8 @@ logger = getLogger(__name__)
 
 class PreprocessSales(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
+
+    drop_old_data_days = luigi.IntParameter()
 
     def requires(self):
         return LoadInputData(filename='sales_train_validation.csv')
