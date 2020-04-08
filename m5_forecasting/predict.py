@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import List
 
 import gokart
+import luigi
 import pandas as pd
 import numpy as np
 from lightgbm import Booster
@@ -21,13 +22,15 @@ logger = getLogger(__name__)
 class Predict(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
+    is_small: bool = luigi.BoolParameter()
+
     def output(self):
-        return self.make_target('submission.csv', use_unique_id=False)
+        return self.make_target('submission.csv', use_unique_id=self.is_small)
 
     def requires(self):
         calendar_data_task = PreprocessCalendar()
         selling_price_data_task = PreprocessSellingPrice()
-        sales_data_task = PreprocessSales()
+        sales_data_task = PreprocessSales(is_small=self.is_small)
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_data_task)

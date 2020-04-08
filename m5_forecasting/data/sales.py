@@ -12,7 +12,8 @@ logger = getLogger(__name__)
 class PreprocessSales(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    drop_old_data_days = luigi.IntParameter()
+    drop_old_data_days: int = luigi.IntParameter(default=None)
+    is_small: bool = luigi.BoolParameter()
 
     def requires(self):
         return LoadInputData(filename='sales_train_validation.csv')
@@ -20,28 +21,29 @@ class PreprocessSales(gokart.TaskOnKart):
     def run(self):
         required_columns = {'id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'} | set([f'd_{d}' for d in range(1, 1914)])
         data = self.load_data_frame(required_columns=required_columns)
-        output = self._run(data)
+        output = self._run(data, self.drop_old_data_days, self.is_small)
         self.dump(output)
 
     @classmethod
-    def _run(cls, df: pd.DataFrame) -> pd.DataFrame:
-        df = cls._reshape_sales(df, 1000)
+    def _run(cls, df: pd.DataFrame, drop_old_data_days: int, is_small: bool) -> pd.DataFrame:
+        df = cls._reshape_sales(df, drop_old_data_days, is_small)
         df = cls._prep_sales(df)
         return df
 
     @staticmethod
-    def _reshape_sales(df, drop_d=None):
-        if drop_d is not None:
-            df = df.drop(["d_" + str(i + 1) for i in range(drop_d - 1)], axis=1)  # 1日目からdrop_d日目までを削除する（古すぎるから？）
+    def _reshape_sales(df, drop_d, is_small):
+        if is_small:
+            df = df.iloc[:3]
+        else:
+            df = df.drop(["d_" + str(i + 1) for i in range(drop_d - 1)], axis=1)
         df['id'] = df['id'].str.replace('_validation', '')
 
-        # validation, evaluation 期間も足す（値はNaNが入る）
+        # eval_days = 1 if is_small else 2 * 28
         df = df.reindex(columns=df.columns.tolist() + ["d_" + str(1913 + i + 1) for i in range(2 * 28)])
 
         # もともとは (unique id)行だったが、 (unique id * 時系列)行に変換する。1商品・1日ごとに1行
         df = df.melt(id_vars=["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"], var_name='d',
                      value_name='demand')
-
         df['d'] = df['d'].str[2:].astype('int64')
         return df
 

@@ -14,7 +14,7 @@ class TrainLGBM(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     num_boost_round: int = luigi.IntParameter()
-    early_stopping_rounds: int = luigi.IntParameter()
+    early_stopping_rounds: int = luigi.IntParameter(default=None)
 
     feature_task = gokart.TaskInstanceParameter()
 
@@ -42,7 +42,6 @@ class TrainLGBM(gokart.TaskOnKart):
         params = {'boosting_type': 'gbdt', 'metric': 'rmse', 'objective': 'poisson', 'n_jobs': -1, 'seed': 20,
                   'learning_rate': 0.075, 'bagging_fraction': 0.66, 'bagging_freq': 1, 'colsample_bytree': 0.77,
                   'num_leaves': 63, 'lambda_l2': 0.1}
-
         valid_sets = [train_set, val_set] if not data['x_val'].empty else None
         model = lgb.train(params, train_set, num_boost_round=num_boost_round, early_stopping_rounds=early_stopping_rounds,
                           valid_sets=valid_sets, verbose_eval=100)
