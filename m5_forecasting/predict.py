@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import List
 
 import gokart
+import luigi
 import pandas as pd
 import numpy as np
 from lightgbm import Booster
@@ -47,7 +48,7 @@ class Predict(gokart.TaskOnKart):
     @staticmethod
     def _run(model: Booster, feature_columns: List[str], feature: pd.DataFrame, sample_submission: pd.DataFrame, dark_magic=False) -> pd.DataFrame:
         test = feature[(feature['d'] >= 1914)]
-        pred = model.predict(test[feature_columns], axis=1)
+        pred = model.predict(test[feature_columns])
         if dark_magic:
             pred = pred / pred[test["id"].str.endswith("validation")].mean() * 1.447147
         test['demand'] = pred
