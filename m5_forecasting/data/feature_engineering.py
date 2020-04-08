@@ -33,7 +33,7 @@ class MergeData(gokart.TaskOnKart):
         gc.collect()
 
         sales = sales.merge(selling_price, how="left", on=["store_id", "item_id", "wm_yr_wk"])
-        sales.drop(["wm_yr_wk"], axis=1, inplace=True)
+        # sales.drop(["wm_yr_wk"], axis=1, inplace=True)  # 結局落とすの？
         gc.collect()
         del selling_price
 

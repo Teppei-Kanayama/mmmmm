@@ -37,8 +37,6 @@ class PreprocessSales(gokart.TaskOnKart):
         else:
             df = df.drop(["d_" + str(i + 1) for i in range(drop_d - 1)], axis=1)
         df['id'] = df['id'].str.replace('_validation', '')
-
-        # eval_days = 1 if is_small else 2 * 28
         df = df.reindex(columns=df.columns.tolist() + ["d_" + str(1913 + i + 1) for i in range(2 * 28)])
 
         # もともとは (unique id)行だったが、 (unique id * 時系列)行に変換する。1商品・1日ごとに1行
@@ -49,7 +47,11 @@ class PreprocessSales(gokart.TaskOnKart):
 
     @staticmethod
     def _prep_sales(df):
+        # TODO: shiftの意味は？
+        df['lag_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28))
         df['lag_t28'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28))
+
+        # TODO: rollingの意味は？
         df['rolling_mean_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(7).mean())
         df['rolling_mean_t30'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(30).mean())
         df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
@@ -58,10 +60,11 @@ class PreprocessSales(gokart.TaskOnKart):
         df['rolling_std_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(7).std())
         df['rolling_std_t30'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(30).std())
 
-        to_float32 = ['lag_t28', 'rolling_mean_t7', 'rolling_mean_t30', 'rolling_mean_t60', 'rolling_mean_t90',
+        to_float32 = ['lag_t7', 'lag_t28', 'rolling_mean_t7', 'rolling_mean_t30', 'rolling_mean_t60', 'rolling_mean_t90',
                       'rolling_mean_t180', 'rolling_std_t7', 'rolling_std_t30']
         df[to_float32] = df[to_float32].astype("float32")
 
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
+        # TODO: ここの意味は？
         df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
         return df
