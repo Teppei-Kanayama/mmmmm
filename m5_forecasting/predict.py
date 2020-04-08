@@ -23,6 +23,7 @@ class Predict(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()
+    dark_magic: float = luigi.FloatParameter(default=None)
 
     def output(self):
         return self.make_target('submission.csv', use_unique_id=self.is_small)
@@ -44,15 +45,15 @@ class Predict(gokart.TaskOnKart):
         feature_columns = self.load('model')['feature_columns']
         sample_submission = self.load('sample_submission')
         feature = self.load_data_frame('feature')
-        output = self._run(model, feature_columns, feature, sample_submission)
+        output = self._run(model, feature_columns, feature, sample_submission, self.dark_magic)
         self.dump(output)
 
     @staticmethod
-    def _run(model: Booster, feature_columns: List[str], feature: pd.DataFrame, sample_submission: pd.DataFrame, dark_magic=False) -> pd.DataFrame:
+    def _run(model: Booster, feature_columns: List[str], feature: pd.DataFrame, sample_submission: pd.DataFrame, dark_magic: float) -> pd.DataFrame:
         test = feature[(feature['d'] >= 1914)]
         pred = model.predict(test[feature_columns])
         if dark_magic:
-            pred = pred / pred[test["id"].str.endswith("validation")].mean() * 1.447147
+            pred *= dark_magic
         test['demand'] = pred
         test = test.assign(id=test.id + "_" + np.where(test.d <= 1941, "validation", "evaluation"),
                            F="F" + (test.d - 1913 - 28 * (test.d > 1941)).astype("str"))
