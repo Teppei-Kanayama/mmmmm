@@ -2,10 +2,12 @@ from logging import getLogger
 
 import gc
 import gokart
+import pandas as pd
 from sklearn.preprocessing import OrdinalEncoder
 from tqdm import tqdm
 
 from m5_forecasting.data.load import LoadInputData
+from m5_forecasting.data.sales import PreprocessSales
 
 logger = getLogger(__name__)
 
@@ -45,7 +47,7 @@ class GetFirstSoldDate(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     def requires(self):
-        return LoadInputData(filename='sales_train_validation.csv')
+        return PreprocessSales(is_small=True, drop_old_data_days=0)
 
     def run(self):
         sales = self.load_data_frame()
@@ -54,9 +56,9 @@ class GetFirstSoldDate(gokart.TaskOnKart):
 
     @staticmethod
     def _run(sales):
-        import pdb; pdb.set_trace()
-
-
+        sales = sales[~sales['demand'].isna()]
+        sales = sales[sales['demand'] != 0]  # 非ゼロの中で最小の日付
+        return sales.groupby('id', as_index=False).agg({'d': 'min'}).rename(columns={'d': 'first_sold_date'})
 
 
 class MakeFeature(gokart.TaskOnKart):
@@ -65,14 +67,20 @@ class MakeFeature(gokart.TaskOnKart):
     merged_data_task = gokart.TaskInstanceParameter()
 
     def requires(self):
-        return self.merged_data_task
+        return dict(data=self.merged_data_task, first_sold_date=GetFirstSoldDate())
 
     def run(self):
-        data = self.load_data_frame()
-        self.dump(self._run(data))
+        data = self.load_data_frame('data')
+        first_sold_date = self.load_data_frame('first_sold_date')
+        self.dump(self._run(data, first_sold_date))
 
     @staticmethod
-    def _run(data):
+    def _run(data, first_sold_date):
+        # 最初に売れた日より前は使わない
+        data = pd.merge(data, first_sold_date, on='id', how='left').fillna(0)
+        data = data[data['d'] >= data['first_sold_date']]
+
+        # label ecodeする
         for i, v in tqdm(enumerate(["item_id", "dept_id", "store_id", "cat_id", "state_id"])):
             data[v] = OrdinalEncoder(dtype="int").fit_transform(data[[v]]).astype("int16") + 1
         gc.collect()

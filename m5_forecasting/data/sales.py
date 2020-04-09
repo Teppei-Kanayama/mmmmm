@@ -59,7 +59,7 @@ class PreprocessSales(gokart.TaskOnKart):
         df['rolling_std_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(7).std())
         df['rolling_std_t30'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(30).std())
 
-        to_float32 = ['lag_t7', 'lag_t28', 'rolling_mean_t7', 'rolling_mean_t30', 'rolling_mean_t60', 'rolling_mean_t90',
+        to_float32 = ['lag_t28', 'rolling_mean_t7', 'rolling_mean_t30', 'rolling_mean_t60', 'rolling_mean_t90',
                       'rolling_mean_t180', 'rolling_std_t7', 'rolling_std_t30']
         df[to_float32] = df[to_float32].astype("float32")
 
