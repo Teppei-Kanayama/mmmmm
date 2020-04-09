@@ -5,6 +5,7 @@ import gokart
 from sklearn.preprocessing import OrdinalEncoder
 from tqdm import tqdm
 
+from m5_forecasting.data.load import LoadInputData
 
 logger = getLogger(__name__)
 
@@ -38,6 +39,24 @@ class MergeData(gokart.TaskOnKart):
         del selling_price
 
         return sales
+
+
+class GetFirstSoldDate(gokart.TaskOnKart):
+    task_namespace = 'm5-forecasting'
+
+    def requires(self):
+        return LoadInputData(filename='sales_train_validation.csv')
+
+    def run(self):
+        sales = self.load_data_frame()
+        output = self._run(sales)
+        self.dump(output)
+
+    @staticmethod
+    def _run(sales):
+        import pdb; pdb.set_trace()
+
+
 
 
 class MakeFeature(gokart.TaskOnKart):
