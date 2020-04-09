@@ -47,12 +47,11 @@ class PreprocessSales(gokart.TaskOnKart):
 
     @staticmethod
     def _prep_sales(df):
-        # TODO: shiftの意味は？
-        df['lag_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28))
-        df['lag_t28'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28))
+        # 28日空いているのは、最大で28日前までのデータしか無いため。
 
-        # TODO: rollingの意味は？
-        df['rolling_mean_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(7).mean())
+        df['lag_t28'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28))  # 28日前
+
+        df['rolling_mean_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(7).mean())  # 28日前から28+7日前までの平均
         df['rolling_mean_t30'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(30).mean())
         df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
         df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
@@ -65,6 +64,5 @@ class PreprocessSales(gokart.TaskOnKart):
         df[to_float32] = df[to_float32].astype("float32")
 
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
-        # TODO: ここの意味は？
         df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
         return df
