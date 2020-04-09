@@ -23,15 +23,17 @@ class Predict(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()
+
     dark_magic: float = luigi.FloatParameter(default=None)
+    drop_old_data_days: int = luigi.IntParameter(default=800)
 
     def output(self):
-        return self.make_target('submission.csv', use_unique_id=self.is_small)
+        return self.make_target('submission.csv')
 
     def requires(self):
         calendar_data_task = PreprocessCalendar()
         selling_price_data_task = PreprocessSellingPrice()
-        sales_data_task = PreprocessSales(is_small=self.is_small)
+        sales_data_task = PreprocessSales(is_small=self.is_small, drop_old_data_days=self.drop_old_data_days)
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_data_task)
@@ -60,6 +62,32 @@ class Predict(gokart.TaskOnKart):
         submission = test.pivot(index="id", columns="F", values="demand").reset_index()[sample_submission.columns]
         return submission
 
+
+class Ensemble(gokart.TaskOnKart):
+    task_namespace = 'm5-forecasting'
+
+    def requires(self):
+        long_predict_task = Predict(drop_old_data_days=800)
+        short_predict_task = Predict(drop_old_data_days=1500)
+        return dict(long=long_predict_task, short=short_predict_task)
+
+    def output(self):
+        return self.make_target('submission.csv', use_unique_id=False)
+
+    def run(self):
+        long = self.load_data_frame('long')
+        short = self.load_data_frame('short')
+        output = self._run(long, short)
+        self.dump(output)
+
+    @staticmethod
+    def _run(long, short):
+        ensembled = short.drop('id', axis=1) * 0.2 + long.drop('id', axis=1) * 0.8
+        ensembled['id'] = short['id']
+        return ensembled
+
 # python main.py m5-forecasting.Predict --local-scheduler
 # DATA_SIZE=full python main.py m5-forecasting.Predict --local-scheduler
 # DATA_SIZE=small python main.py m5-forecasting.Predict --local-scheduler
+
+# python main.py m5-forecasting.Ensemble --local-scheduler
