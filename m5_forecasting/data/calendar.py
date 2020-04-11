@@ -40,7 +40,7 @@ class PreprocessCalendar(gokart.TaskOnKart):
         df[to_int8] = df[to_int8].astype("int8")
 
         # dateはd, weekdayはwdayと同じ情報なので落とす。
-        # event_name_2, event_type_2はなぜ使わない？
+        # event_name_2, event_type_2はほぼ空なので使わない。
         df = df.drop(["date", "weekday", "event_name_2", "event_type_2"], axis=1)
         return df
 

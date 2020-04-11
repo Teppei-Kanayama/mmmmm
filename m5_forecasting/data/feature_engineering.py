@@ -2,6 +2,7 @@ from logging import getLogger
 
 import gc
 import gokart
+import luigi
 import pandas as pd
 from sklearn.preprocessing import OrdinalEncoder
 from tqdm import tqdm
@@ -36,7 +37,7 @@ class MergeData(gokart.TaskOnKart):
         gc.collect()
 
         sales = sales.merge(selling_price, how="left", on=["store_id", "item_id", "wm_yr_wk"])
-        # sales.drop(["wm_yr_wk"], axis=1, inplace=True)  # 結局落とすの？
+        sales.drop(["wm_yr_wk"], axis=1, inplace=True)  # 結局落とすの？
         gc.collect()
         del selling_price
 
@@ -46,8 +47,10 @@ class MergeData(gokart.TaskOnKart):
 class GetFirstSoldDate(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
+    is_small: bool = luigi.BoolParameter()
+
     def requires(self):
-        return PreprocessSales(is_small=True, drop_old_data_days=0)
+        return PreprocessSales(is_small=self.is_small, drop_old_data_days=0, skip_make_feature=True)
 
     def run(self):
         sales = self.load_data_frame()
@@ -65,9 +68,10 @@ class MakeFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     merged_data_task = gokart.TaskInstanceParameter()
+    is_small: bool = luigi.BoolParameter()
 
     def requires(self):
-        return dict(data=self.merged_data_task, first_sold_date=GetFirstSoldDate())
+        return dict(data=self.merged_data_task, first_sold_date=GetFirstSoldDate(is_small=self.is_small))
 
     def run(self):
         data = self.load_data_frame('data')
@@ -77,8 +81,9 @@ class MakeFeature(gokart.TaskOnKart):
     @staticmethod
     def _run(data, first_sold_date):
         # 最初に売れた日より前は使わない
-        data = pd.merge(data, first_sold_date, on='id', how='left').fillna(0)
-        data = data[data['d'] >= data['first_sold_date']]
+        # data = pd.merge(data, first_sold_date, on='id', how='left').fillna(0)
+        # data = data[data['d'] >= data['first_sold_date']]
+        # data = data.drop('first_sold_date')
 
         # label ecodeする
         for i, v in tqdm(enumerate(["item_id", "dept_id", "store_id", "cat_id", "state_id"])):

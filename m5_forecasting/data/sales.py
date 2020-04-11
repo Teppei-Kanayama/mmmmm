@@ -14,6 +14,7 @@ class PreprocessSales(gokart.TaskOnKart):
 
     drop_old_data_days: int = luigi.IntParameter(default=None)
     is_small: bool = luigi.BoolParameter()
+    skip_make_feature: bool = luigi.BoolParameter()
 
     def requires(self):
         return LoadInputData(filename='sales_train_validation.csv')
@@ -21,12 +22,14 @@ class PreprocessSales(gokart.TaskOnKart):
     def run(self):
         required_columns = {'id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'} | set([f'd_{d}' for d in range(1, 1914)])
         data = self.load_data_frame(required_columns=required_columns)
-        output = self._run(data, self.drop_old_data_days, self.is_small)
+        output = self._run(data, self.drop_old_data_days, self.is_small, self.skip_make_feature)
         self.dump(output)
 
     @classmethod
-    def _run(cls, df: pd.DataFrame, drop_old_data_days: int, is_small: bool) -> pd.DataFrame:
+    def _run(cls, df: pd.DataFrame, drop_old_data_days: int, is_small: bool, skip_make_feature: bool) -> pd.DataFrame:
         df = cls._reshape_sales(df, drop_old_data_days, is_small)
+        if skip_make_feature:
+            return df
         df = cls._prep_sales(df)
         return df
 
