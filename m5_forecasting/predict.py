@@ -67,17 +67,25 @@ class Predict(gokart.TaskOnKart):
 class PredictAll(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
+    interval: int = luigi.IntParameter()
+
     def output(self):
         return self.make_target('submission.csv')
 
     def requires(self):
-        model_task = Train()
-        predict0 = Predict(predict_from_date=1914, predict_to_date=1914+7, trained_model_task=model_task, latest_prediction=DummyTask())
-        predict1 = Predict(predict_from_date=1914+7, predict_to_date=1914+14, trained_model_task=model_task, latest_prediction=predict0)
-        predict2 = Predict(predict_from_date=1914+14, predict_to_date=1914+21, trained_model_task=model_task, latest_prediction=predict1)
+        assert 28 % self.interval == 0, 'interval is invalid!'
 
+        model_task = Train()
+        START_DATE = 1914
+
+        def make_prediction(from_date, interval):
+            previous_prediction = DummyTask() if from_date == START_DATE else make_prediction(from_date - interval, interval)
+            return Predict(predict_from_date=from_date, predict_to_date=from_date + interval,
+                           trained_model_task=model_task, latest_prediction_task=previous_prediction)
+
+        predict = make_prediction(1942 - self.interval, self.interval)
         sample_submission_data_task = LoadInputData(filename='sample_submission.csv')
-        return dict(predict=predict2, sample_submission=sample_submission_data_task)
+        return dict(predict=predict, sample_submission=sample_submission_data_task)
 
     def run(self):
         test = self.load_data_frame('predict')
@@ -98,4 +106,4 @@ class PredictAll(gokart.TaskOnKart):
 # DATA_SIZE=full python main.py m5-forecasting.Predict --local-scheduler
 # DATA_SIZE=small python main.py m5-forecasting.Predict --local-scheduler
 
-# DATA_SIZE=small python main.py m5-forecasting.PredictAll --local-scheduler
+# DATA_SIZE=small python main.py m5-forecasting.PredictAll --interval 28 --local-scheduler
