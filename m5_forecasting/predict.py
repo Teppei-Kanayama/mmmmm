@@ -18,6 +18,11 @@ logger = getLogger(__name__)
 
 # best score: 0.549
 
+VALIDATION_START_DATE = 1914
+EVALUATION_START_DATE = 1942
+DURATION = 28
+
+
 class DummyTask(gokart.TaskOnKart):
     is_dummy = luigi.BoolParameter(default=True)
 
@@ -76,15 +81,13 @@ class PredictAll(gokart.TaskOnKart):
         assert 28 % self.interval == 0, 'interval is invalid!'
 
         model_task = Train()
-        VALIDATION_START_DATE = 1914
-        EVALLUATION_START_DATE = 1942
 
         def make_prediction(from_date, interval):
             previous_prediction = DummyTask() if from_date == VALIDATION_START_DATE else make_prediction(from_date - interval, interval)
             return Predict(predict_from_date=from_date, predict_to_date=from_date + interval,
                            trained_model_task=model_task, latest_prediction_task=previous_prediction)
 
-        predict = make_prediction(EVALLUATION_START_DATE - self.interval, self.interval)
+        predict = make_prediction(EVALUATION_START_DATE - self.interval, self.interval)
         sample_submission_data_task = LoadInputData(filename='sample_submission.csv')
         return dict(predict=predict, sample_submission=sample_submission_data_task)
 
@@ -97,9 +100,9 @@ class PredictAll(gokart.TaskOnKart):
     @staticmethod
     def _run(test, sample_submission):
         test = test.fillna(-1)  # evaluation scores
-        # TODO: parameterize
-        test = test.assign(id=test.id + "_" + np.where(test.d <= 1941, "validation", "evaluation"),
-                           F="F" + (test.d - 1913 - 28 * (test.d > 1941)).astype("str"))
+        test = test.assign(id=test.id + "_" + np.where(test.d < EVALUATION_START_DATE, "validation", "evaluation"),
+                           F="F" + (test.d - VALIDATION_START_DATE + 1
+                                    - DURATION * (test.d >= EVALUATION_START_DATE)).astype("str"))
         submission = test.pivot(index="id", columns="F", values="demand").reset_index()[sample_submission.columns]
         return submission
 
