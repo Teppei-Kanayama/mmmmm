@@ -37,11 +37,18 @@ class TrainLGBM(gokart.TaskOnKart):
     @staticmethod
     def _run(data: pd.DataFrame, num_boost_round: int, early_stopping_rounds: int) -> Tuple[Booster, List[str], pd.DataFrame]:
         feature_columns = [feature for feature in data['x_train'].columns if feature not in ['id', 'd']]
+        print(f'feature columns: {feature_columns}')
         train_set = lgb.Dataset(data['x_train'][feature_columns], data['y_train'])
         val_set = lgb.Dataset(data['x_val'][feature_columns], data['y_val'])
-        params = {'boosting_type': 'gbdt', 'metric': 'rmse', 'objective': 'poisson', 'n_jobs': -1, 'seed': 20,
-                  'learning_rate': 0.075, 'bagging_fraction': 0.66, 'bagging_freq': 1, 'colsample_bytree': 0.77,
-                  'num_leaves': 63, 'lambda_l2': 0.1}
+        # params = {'boosting_type': 'gbdt', 'metric': 'rmse', 'objective': 'poisson', 'n_jobs': -1, 'seed': 20,
+        #           'learning_rate': 0.075, 'bagging_fraction': 0.66, 'bagging_freq': 1, 'colsample_bytree': 0.77,
+        #           'num_leaves': 63, 'lambda_l2': 0.1}
+
+        params = {"objective": "poisson", "metric": "rmse", "force_row_wise": True, "learning_rate": 0.075,
+                  "sub_row": 0.75, "bagging_freq": 1, "lambda_l2": 0.1,
+                  'verbosity': 1,
+                  'num_iterations': 2500, }
+
         valid_sets = [train_set, val_set] if not data['x_val'].empty else None
         model = lgb.train(params, train_set, num_boost_round=num_boost_round, early_stopping_rounds=early_stopping_rounds,
                           valid_sets=valid_sets, verbose_eval=100)
