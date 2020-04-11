@@ -9,7 +9,7 @@ from lightgbm import Booster
 
 from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
-from m5_forecasting.data.sales import PreprocessSales
+from m5_forecasting.data.sales import PreprocessSales, MekeSalesFeature
 from m5_forecasting.data.selling_price import PreprocessSellingPrice
 from m5_forecasting.data.train_validation_split import TrainValidationSplit
 from m5_forecasting.tasks.run_lgbm import TrainLGBM
@@ -32,7 +32,7 @@ class Predict(gokart.TaskOnKart):
     def requires(self):
         calendar_data_task = PreprocessCalendar()
         selling_price_data_task = PreprocessSellingPrice()
-        sales_data_task = PreprocessSales(is_small=self.is_small)
+        sales_data_task = MekeSalesFeature(sales_data_task=PreprocessSales(is_small=self.is_small))
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_data_task)

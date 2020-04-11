@@ -49,7 +49,7 @@ class GetFirstSoldDate(gokart.TaskOnKart):
     is_small: bool = luigi.BoolParameter()
 
     def requires(self):
-        return PreprocessSales(is_small=self.is_small, drop_old_data_days=0, skip_make_feature=True)
+        return PreprocessSales(is_small=self.is_small, drop_old_data_days=0)
 
     def run(self):
         sales = self.load_data_frame()

@@ -39,7 +39,7 @@ class PreprocessSales(gokart.TaskOnKart):
         return df
 
 
-class MekeSalesFeatures(gokart.TaskOnKart):
+class MekeSalesFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     sales_data_task = gokart.TaskInstanceParameter()
