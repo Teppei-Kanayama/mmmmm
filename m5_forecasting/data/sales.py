@@ -43,18 +43,23 @@ class MekeSalesFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     sales_data_task = gokart.TaskInstanceParameter()
+    from_date: int = luigi.IntParameter(default=None, significant=False)
+    to_date: int = luigi.IntParameter(default=None, significant=False)
 
     def requires(self):
         return self.sales_data_task
 
     def run(self):
         data = self.load_data_frame()
-        output = self._run(data)
+        output = self._run(data,self.from_date, self.to_date)
         self.dump(output)
 
     @staticmethod
-    def _run(df):
+    def _run(df, from_date, to_date):
         # 28日空いているのは、最大で28日前までのデータしか無いため。
+        buffer = 28
+        if from_date and to_date:
+            df = df[(from_date - buffer <= df['d']) & (df['d'] < to_date)]
 
         df['lag_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(7))  # 7日前
         df['lag_t28'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28))  # 28日前

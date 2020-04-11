@@ -43,7 +43,7 @@ class Predict(gokart.TaskOnKart):
 
         sales_data_task = PreprocessSales(is_small=self.is_small) if 'is_dummy' in self.latest_prediction_task.param_kwargs.keys() \
             else self.latest_prediction_task
-        sales_feature_task = MekeSalesFeature(sales_data_task=sales_data_task)
+        sales_feature_task = MekeSalesFeature(sales_data_task=sales_data_task, from_date=self.predict_from_date, to_date=self.predict_to_date)
 
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
