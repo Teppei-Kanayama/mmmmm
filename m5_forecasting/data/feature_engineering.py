@@ -37,7 +37,7 @@ class MergeData(gokart.TaskOnKart):
         gc.collect()
 
         sales = sales.merge(selling_price, how="left", on=["store_id", "item_id", "wm_yr_wk"])
-        sales.drop(["wm_yr_wk"], axis=1, inplace=True)  # 結局落とすの？
+        # sales.drop(["wm_yr_wk"], axis=1, inplace=True)  # 結局落とすの？
         gc.collect()
         del selling_price
 
@@ -81,9 +81,9 @@ class MakeFeature(gokart.TaskOnKart):
     @staticmethod
     def _run(data, first_sold_date):
         # 最初に売れた日より前は使わない
-        # data = pd.merge(data, first_sold_date, on='id', how='left').fillna(0)
-        # data = data[data['d'] >= data['first_sold_date']]
-        # data = data.drop('first_sold_date')
+        data = pd.merge(data, first_sold_date, on='id', how='left').fillna(0)
+        data = data[data['d'] >= data['first_sold_date']]
+        data = data.drop('first_sold_date', axis=1)
 
         # label ecodeする
         for i, v in tqdm(enumerate(["item_id", "dept_id", "store_id", "cat_id", "state_id"])):
