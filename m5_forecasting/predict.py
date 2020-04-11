@@ -18,7 +18,6 @@ logger = getLogger(__name__)
 
 
 class DummyTask(gokart.TaskOnKart):
-
     is_dummy = luigi.BoolParameter(default=True)
 
 
@@ -76,14 +75,15 @@ class PredictAll(gokart.TaskOnKart):
         assert 28 % self.interval == 0, 'interval is invalid!'
 
         model_task = Train()
-        START_DATE = 1914
+        VALIDATION_START_DATE = 1914
+        EVALLUATION_START_DATE = 1942
 
         def make_prediction(from_date, interval):
-            previous_prediction = DummyTask() if from_date == START_DATE else make_prediction(from_date - interval, interval)
+            previous_prediction = DummyTask() if from_date == VALIDATION_START_DATE else make_prediction(from_date - interval, interval)
             return Predict(predict_from_date=from_date, predict_to_date=from_date + interval,
                            trained_model_task=model_task, latest_prediction_task=previous_prediction)
 
-        predict = make_prediction(1942 - self.interval, self.interval)
+        predict = make_prediction(EVALLUATION_START_DATE - self.interval, self.interval)
         sample_submission_data_task = LoadInputData(filename='sample_submission.csv')
         return dict(predict=predict, sample_submission=sample_submission_data_task)
 
@@ -96,14 +96,11 @@ class PredictAll(gokart.TaskOnKart):
     @staticmethod
     def _run(test, sample_submission):
         test = test.fillna(-1)  # evaluation scores
+        # TODO: parameterize
         test = test.assign(id=test.id + "_" + np.where(test.d <= 1941, "validation", "evaluation"),
                            F="F" + (test.d - 1913 - 28 * (test.d > 1941)).astype("str"))
         submission = test.pivot(index="id", columns="F", values="demand").reset_index()[sample_submission.columns]
         return submission
 
-
-# python main.py m5-forecasting.Predict --local-scheduler
-# DATA_SIZE=full python main.py m5-forecasting.Predict --local-scheduler
-# DATA_SIZE=small python main.py m5-forecasting.Predict --local-scheduler
 
 # DATA_SIZE=small python main.py m5-forecasting.PredictAll --interval 28 --local-scheduler

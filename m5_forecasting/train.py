@@ -19,8 +19,6 @@ class Train(gokart.TaskOnKart):
 
     is_small: bool = luigi.BoolParameter()
 
-    dark_magic: float = luigi.FloatParameter(default=None)
-
     def requires(self):
         calendar_data_task = PreprocessCalendar()
         selling_price_data_task = PreprocessSellingPrice()
@@ -34,3 +32,6 @@ class Train(gokart.TaskOnKart):
 
     def output(self):
         return self.input()
+
+
+ # python main.py m5-forecasting.Train --local-scheduler
