@@ -11,10 +11,8 @@ from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
 from m5_forecasting.data.sales import PreprocessSales, MekeSalesFeature
 from m5_forecasting.data.selling_price import PreprocessSellingPrice
-from m5_forecasting.data.train_validation_split import TrainValidationSplit
-from m5_forecasting.tasks.run_lgbm import TrainLGBM
-
 from m5_forecasting.data.load import LoadInputData
+from m5_forecasting.train import Train
 
 logger = getLogger(__name__)
 
@@ -31,22 +29,23 @@ class Predict(gokart.TaskOnKart):
 
     predict_from_date: int = luigi.IntParameter()
     predict_to_date: int = luigi.IntParameter()
-    latest_prediction: gokart.TaskOnKart = gokart.TaskInstanceParameter(default=None)
+    latest_prediction_task: gokart.TaskOnKart = gokart.TaskInstanceParameter()
+    trained_model_task: gokart.TaskOnKart = gokart.TaskInstanceParameter()
 
     def requires(self):
         calendar_data_task = PreprocessCalendar()
         selling_price_data_task = PreprocessSellingPrice()
 
-        sales_data_task = PreprocessSales(is_small=self.is_small) if 'is_dummy' in self.latest_prediction.param_kwargs.keys() \
-            else self.latest_prediction
+        sales_data_task = PreprocessSales(is_small=self.is_small) if 'is_dummy' in self.latest_prediction_task.param_kwargs.keys() \
+            else self.latest_prediction_task
         sales_feature_task = MekeSalesFeature(sales_data_task=sales_data_task)
 
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_feature_task)
         feature_task = MakeFeature(merged_data_task=merged_data_task)
-        model_task = TrainLGBM(feature_task=TrainValidationSplit(data_task=feature_task))
-        return dict(model=model_task, sales=sales_data_task, feature=feature_task)
+
+        return dict(model=self.trained_model_task, sales=sales_data_task, feature=feature_task)
 
     def run(self):
         model = self.load('model')['model']
@@ -72,9 +71,10 @@ class PredictAll(gokart.TaskOnKart):
         return self.make_target('submission.csv')
 
     def requires(self):
-        predict0 = Predict(predict_from_date=1914, predict_to_date=1914+7, latest_prediction=DummyTask())
-        predict1 = Predict(predict_from_date=1914+7, predict_to_date=1914+14, latest_prediction=predict0)
-        predict2 = Predict(predict_from_date=1914+14, predict_to_date=1914+21, latest_prediction=predict1)
+        model_task = Train()
+        predict0 = Predict(predict_from_date=1914, predict_to_date=1914+7, trained_model_task=model_task, latest_prediction=DummyTask())
+        predict1 = Predict(predict_from_date=1914+7, predict_to_date=1914+14, trained_model_task=model_task, latest_prediction=predict0)
+        predict2 = Predict(predict_from_date=1914+14, predict_to_date=1914+21, trained_model_task=model_task, latest_prediction=predict1)
 
         sample_submission_data_task = LoadInputData(filename='sample_submission.csv')
         return dict(predict=predict2, sample_submission=sample_submission_data_task)
@@ -82,12 +82,16 @@ class PredictAll(gokart.TaskOnKart):
     def run(self):
         test = self.load_data_frame('predict')
         sample_submission = self.load_data_frame('sample_submission')
+        output = self._run(test, sample_submission)
+        self.dump(output)
 
+    @staticmethod
+    def _run(test, sample_submission):
         test = test.fillna(-1)  # evaluation scores
         test = test.assign(id=test.id + "_" + np.where(test.d <= 1941, "validation", "evaluation"),
                            F="F" + (test.d - 1913 - 28 * (test.d > 1941)).astype("str"))
         submission = test.pivot(index="id", columns="F", values="demand").reset_index()[sample_submission.columns]
-        self.dump(submission)
+        return submission
 
 
 # python main.py m5-forecasting.Predict --local-scheduler
