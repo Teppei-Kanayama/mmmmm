@@ -16,6 +16,7 @@ from m5_forecasting.train import Train
 
 logger = getLogger(__name__)
 
+# best score: 0.549
 
 class DummyTask(gokart.TaskOnKart):
     is_dummy = luigi.BoolParameter(default=True)
