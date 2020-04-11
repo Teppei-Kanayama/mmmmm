@@ -61,25 +61,25 @@ class MekeSalesFeature(gokart.TaskOnKart):
         if from_date and to_date:
             df = df[(from_date - buffer <= df['d']) & (df['d'] < to_date)]
 
-        df['lag_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(7))  # 7日前
-        df['lag_t28'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28))  # 28日前
-        to_float32 = ['lag_t7', 'lag_t28']
-
-        # df['rolling_mean_t7'] = df.groupby(['id'])['demand'].transform(
-        #     lambda x: x.shift(28).rolling(7).mean())  # 28日前から28+7日前までの平均
-        # df['rolling_mean_t30'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(30).mean())
+        # TODO: longer trend?
         # df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
         # df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
         # df['rolling_mean_t180'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(180).mean())
-        # df['rolling_std_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(7).std())
-        # df['rolling_std_t30'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(30).std())
 
         lags = [7, 28]
         wins = [7, 28]
+        to_float32 = []
         for lag in lags:
+            column = f'lag{lag}'
+            df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag))
+            to_float32.append(column)
             for win in wins:
                 column = f'rolling_mean_lag{lag}_win{win}'
                 df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).mean())
+                to_float32.append(column)
+
+                column = f'rolling_std_lag{lag}_win{win}'
+                df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).std())
                 to_float32.append(column)
 
         df[to_float32] = df[to_float32].astype("float32")
