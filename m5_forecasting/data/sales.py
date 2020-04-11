@@ -57,7 +57,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
     @staticmethod
     def _run(df, from_date, to_date):
         # 28日空いているのは、最大で28日前までのデータしか無いため。
-        buffer = 28
+        buffer = 28 + 28
         if from_date and to_date:
             df = df[(from_date - buffer <= df['d']) & (df['d'] < to_date)]
 
