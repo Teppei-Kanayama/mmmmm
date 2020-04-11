@@ -81,6 +81,7 @@ class PredictAll(gokart.TaskOnKart):
         assert 28 % self.interval == 0, 'interval is invalid!'
 
         model_task = Train()
+        assert model_task.input()['model'].exists(), "trained model doesn't exists!"
 
         def make_prediction(from_date, interval):
             previous_prediction = DummyTask() if from_date == VALIDATION_START_DATE else make_prediction(from_date - interval, interval)
