@@ -14,7 +14,6 @@ class PreprocessSales(gokart.TaskOnKart):
 
     drop_old_data_days: int = luigi.IntParameter(default=None)
     is_small: bool = luigi.BoolParameter()
-    skip_make_feature: bool = luigi.BoolParameter()
 
     def requires(self):
         return LoadInputData(filename='sales_train_validation.csv')
@@ -22,39 +21,45 @@ class PreprocessSales(gokart.TaskOnKart):
     def run(self):
         required_columns = {'id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'} | set([f'd_{d}' for d in range(1, 1914)])
         data = self.load_data_frame(required_columns=required_columns)
-        output = self._run(data, self.drop_old_data_days, self.is_small, self.skip_make_feature)
+        output = self._run(data, self.drop_old_data_days, self.is_small)
         self.dump(output)
 
-    @classmethod
-    def _run(cls, df: pd.DataFrame, drop_old_data_days: int, is_small: bool, skip_make_feature: bool) -> pd.DataFrame:
-        df = cls._reshape_sales(df, drop_old_data_days, is_small)
-        if skip_make_feature:
-            return df
-        df = cls._prep_sales(df)
-        return df
-
     @staticmethod
-    def _reshape_sales(df, drop_d, is_small):
+    def _run(df: pd.DataFrame, drop_old_data_days: int, is_small: bool) -> pd.DataFrame:
         if is_small:
             df = df.iloc[:3]
         else:
-            df = df.drop(["d_" + str(i + 1) for i in range(drop_d - 1)], axis=1)
+            df = df.drop(["d_" + str(i + 1) for i in range(drop_old_data_days - 1)], axis=1)
         df['id'] = df['id'].str.replace('_validation', '')
         df = df.reindex(columns=df.columns.tolist() + ["d_" + str(1913 + i + 1) for i in range(2 * 28)])
 
-        # もともとは (unique id)行だったが、 (unique id * 時系列)行に変換する。1商品・1日ごとに1行
         df = df.melt(id_vars=["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"], var_name='d',
                      value_name='demand')
         df['d'] = df['d'].str[2:].astype('int64')
         return df
 
+
+class MekeSalesFeatures(gokart.TaskOnKart):
+    task_namespace = 'm5-forecasting'
+
+    sales_data_task = gokart.TaskInstanceParameter()
+
+    def requires(self):
+        return self.sales_data_task
+
+    def run(self):
+        data = self.load_data_frame()
+        output = self._run(data)
+        self.dump(output)
+
     @staticmethod
-    def _prep_sales(df):
+    def _run(df):
         # 28日空いているのは、最大で28日前までのデータしか無いため。
 
         df['lag_t28'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28))  # 28日前
 
-        df['rolling_mean_t7'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(7).mean())  # 28日前から28+7日前までの平均
+        df['rolling_mean_t7'] = df.groupby(['id'])['demand'].transform(
+            lambda x: x.shift(28).rolling(7).mean())  # 28日前から28+7日前までの平均
         df['rolling_mean_t30'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(30).mean())
         df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
         df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
