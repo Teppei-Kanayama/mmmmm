@@ -7,7 +7,6 @@ import pandas as pd
 from sklearn.preprocessing import OrdinalEncoder
 from tqdm import tqdm
 
-from m5_forecasting.data.load import LoadInputData
 from m5_forecasting.data.sales import PreprocessSales
 
 logger = getLogger(__name__)
@@ -67,6 +66,7 @@ class GetFirstSoldDate(gokart.TaskOnKart):
 class MakeFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
+    delete_first_sold_date = luigi.BoolParameter()
     merged_data_task = gokart.TaskInstanceParameter()
     is_small: bool = luigi.BoolParameter()
 
@@ -76,17 +76,23 @@ class MakeFeature(gokart.TaskOnKart):
     def run(self):
         data = self.load_data_frame('data')
         first_sold_date = self.load_data_frame('first_sold_date')
-        self.dump(self._run(data, first_sold_date))
+        self.dump(self._run(data, first_sold_date, self.delete_first_sold_date))
+
+    @classmethod
+    def _run(cls, data, first_sold_date, delete_first_sold_date):
+        data = cls._delete_before_first_sold_date(data, first_sold_date) if delete_first_sold_date else data
+        data = cls._label_encode(data)
+        return data
 
     @staticmethod
-    def _run(data, first_sold_date):
-        # 最初に売れた日より前は使わない
+    def _delete_before_first_sold_date(data, first_sold_date):
         data = pd.merge(data, first_sold_date, on='id', how='left').fillna(0)
         data = data[data['d'] >= data['first_sold_date']]
         data = data.drop('first_sold_date', axis=1)
+        return data
 
-        # label ecodeする
+    @staticmethod
+    def _label_encode(data):
         for i, v in tqdm(enumerate(["item_id", "dept_id", "store_id", "cat_id", "state_id"])):
             data[v] = OrdinalEncoder(dtype="int").fit_transform(data[[v]]).astype("int16") + 1
-        gc.collect()
         return data
