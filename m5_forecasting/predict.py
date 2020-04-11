@@ -19,6 +19,11 @@ from m5_forecasting.data.load import LoadInputData
 logger = getLogger(__name__)
 
 
+class DummyTask(gokart.TaskOnKart):
+
+    is_dummy = luigi.BoolParameter(default=True)
+
+
 class Predict(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
@@ -26,16 +31,14 @@ class Predict(gokart.TaskOnKart):
 
     predict_from_date: int = luigi.IntParameter()
     predict_to_date: int = luigi.IntParameter()
-    latest_prediction = gokart.TaskInstanceParameter(default=None)
-
-    def output(self):
-        return self.make_target('submission.csv')
+    latest_prediction: gokart.TaskOnKart = gokart.TaskInstanceParameter(default=None)
 
     def requires(self):
         calendar_data_task = PreprocessCalendar()
         selling_price_data_task = PreprocessSellingPrice()
 
-        sales_data_task = self.latest_prediction if self.latest_prediction else PreprocessSales(is_small=self.is_small)
+        sales_data_task = PreprocessSales(is_small=self.is_small) if 'is_dummy' in self.latest_prediction.param_kwargs.keys() \
+            else self.latest_prediction
         sales_feature_task = MekeSalesFeature(sales_data_task=sales_data_task)
 
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
@@ -56,21 +59,20 @@ class Predict(gokart.TaskOnKart):
 
     @staticmethod
     def _run(model: Booster, feature_columns: List[str], feature: pd.DataFrame, sales, predict_from_date, predict_to_date) -> pd.DataFrame:
-        test = feature[(predict_from_date <= feature['d']) & (feature['d'] < predict_to_date)]  # 1914
+        test = feature[(predict_from_date <= feature['d']) & (feature['d'] < predict_to_date)]  # 1914)
         pred = model.predict(test[feature_columns])
-        import pdb; pdb.set_trace()
-
-        # test['demand'] = pred
-        # test = test.assign(id=test.id + "_" + np.where(test.d <= 1941, "validation", "evaluation"),
-        #                    F="F" + (test.d - 1913 - 28 * (test.d > 1941)).astype("str"))
-        # submission = test.pivot(index="id", columns="F", values="demand").reset_index()[sample_submission.columns]
-        # return submission
+        sales.loc[sales[(sales['id'].isin(test['id'])) & (sales['d'].isin(test['d']))].index, 'demand'] = pred
+        return sales
 
 
 class PredictAll(gokart.TaskOnKart):
+    task_namespace = 'm5-forecasting'
+
+    def output(self):
+        return self.make_target('submission.csv')
 
     def requires(self):
-        predict0 = Predict(predict_from_date=1914, predict_to_date=1914+7)
+        predict0 = Predict(predict_from_date=1914, predict_to_date=1914+7, latest_prediction=DummyTask())
         predict1 = Predict(predict_from_date=1914+7, predict_to_date=1914+14, latest_prediction=predict0)
         predict2 = Predict(predict_from_date=1914+14, predict_to_date=1914+21, latest_prediction=predict1)
 
@@ -78,9 +80,15 @@ class PredictAll(gokart.TaskOnKart):
         return dict(predict=predict2, sample_submission=sample_submission_data_task)
 
     def run(self):
-        data = self.load_data_frame('predict')
+        test = self.load_data_frame('predict')
         sample_submission = self.load_data_frame('sample_submission')
-        import pdb; pdb.set_trace()
+
+        test = test.fillna(-1)  # evaluation scores
+        test = test.assign(id=test.id + "_" + np.where(test.d <= 1941, "validation", "evaluation"),
+                           F="F" + (test.d - 1913 - 28 * (test.d > 1941)).astype("str"))
+        submission = test.pivot(index="id", columns="F", values="demand").reset_index()[sample_submission.columns]
+        self.dump(submission)
+
 
 # python main.py m5-forecasting.Predict --local-scheduler
 # DATA_SIZE=full python main.py m5-forecasting.Predict --local-scheduler
