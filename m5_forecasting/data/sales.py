@@ -43,15 +43,18 @@ class MekeSalesFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     sales_data_task = gokart.TaskInstanceParameter()
-    from_date: int = luigi.IntParameter(default=None, significant=False)
-    to_date: int = luigi.IntParameter(default=None, significant=False)
+    predicted_sales_data_task = gokart.TaskInstanceParameter()
+    from_date: int = luigi.IntParameter(default=None)
+    to_date: int = luigi.IntParameter(default=None)
 
     def requires(self):
-        return self.sales_data_task
+        return dict(sales=self.sales_data_task, predicted_sales=self.predicted_sales_data_task)
 
     def run(self):
-        data = self.load_data_frame()
-        output = self._run(data,self.from_date, self.to_date)
+        sales = self.load_data_frame('sales')
+        predicted_sales = self.load_data_frame('predicted_sales')
+        df = pd.concat([sales, predicted_sales])
+        output = self._run(df, self.from_date, self.to_date)
         self.dump(output)
 
     @staticmethod
