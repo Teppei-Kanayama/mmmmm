@@ -108,4 +108,5 @@ class PredictAll(gokart.TaskOnKart):
         return submission
 
 
-# DATA_SIZE=small python main.py m5-forecasting.PredictAll --interval 28 --local-scheduler
+# python main.py m5-forecasting.PredictAll --interval 7 --local-scheduler
+# DATA_SIZE=small python main.py m5-forecasting.PredictAll --interval 7 --local-scheduler

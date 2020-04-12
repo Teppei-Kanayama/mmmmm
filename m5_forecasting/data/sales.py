@@ -78,12 +78,13 @@ class MekeSalesFeature(gokart.TaskOnKart):
                 df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).mean())
                 to_float32.append(column)
 
-                column = f'rolling_std_lag{lag}_win{win}'
-                df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).std())
-                to_float32.append(column)
+                # column = f'rolling_std_lag{lag}_win{win}'
+                # df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).std())
+                # to_float32.append(column)
 
         df[to_float32] = df[to_float32].astype("float32")
 
+        # TODO: must be removed?
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
         # df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
         return df
