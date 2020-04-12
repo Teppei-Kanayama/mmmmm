@@ -16,7 +16,7 @@ from m5_forecasting.train import Train
 
 logger = getLogger(__name__)
 
-# best score: 0.549
+# best score: 0.549 (再現済み)
 
 VALIDATION_START_DATE = 1914
 EVALUATION_START_DATE = 1942
