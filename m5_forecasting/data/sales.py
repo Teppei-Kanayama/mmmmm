@@ -53,8 +53,11 @@ class MekeSalesFeature(gokart.TaskOnKart):
     def run(self):
         sales = self.load_data_frame('sales')
         predicted_sales = self.load_data_frame('predicted_sales')
-        df = pd.concat([sales, predicted_sales])
-        output = self._run(df, self.from_date, self.to_date)
+        if not predicted_sales.empty:
+            sales.loc[sales[(sales['id'].isin(predicted_sales['id']))
+                            & (sales['d'].isin(predicted_sales['d']))].index, 'demand'] \
+                = predicted_sales['demand'].values
+        output = self._run(sales, self.from_date, self.to_date)
         self.dump(output)
 
     @staticmethod
