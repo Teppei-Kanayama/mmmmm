@@ -63,18 +63,22 @@ class MekeSalesFeature(gokart.TaskOnKart):
     @staticmethod
     def _run(df, from_date, to_date):
         # 28日空いているのは、最大で28日前までのデータしか無いため。
-        buffer = 28 + 28  # TODO: decide buffer automatically
+        buffer = 28 + 180  # TODO: decide buffer automatically
         if from_date and to_date:
             df = df[(from_date - buffer <= df['d']) & (df['d'] < to_date)]
 
+        to_float32 = []
+
         # TODO: longer trend?
-        # df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
-        # df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
-        # df['rolling_mean_t180'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(180).mean())
+        df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
+        df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
+        df['rolling_mean_t180'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(180).mean())
+        to_float32.append('rolling_mean_t60')
+        to_float32.append('rolling_mean_t90')
+        to_float32.append('rolling_mean_t180')
 
         lags = [7, 28]
         wins = [7, 28]
-        to_float32 = []
         for lag in lags:
             column = f'lag{lag}'
             df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag))
@@ -88,7 +92,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
                 # df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).std())
                 # to_float32.append(column)
 
-        df['rolling_mean_lag1_win6'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(1).rolling(6).mean())
+        # df['rolling_mean_lag1_win6'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(1).rolling(6).mean())
 
         df[to_float32] = df[to_float32].astype("float32")
 
