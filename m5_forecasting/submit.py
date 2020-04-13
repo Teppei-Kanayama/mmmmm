@@ -33,12 +33,13 @@ class Submit(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()
+    interval: int = luigi.IntParameter()
 
     def output(self):
         return self.make_target('submission.csv')
 
     def requires(self):
-        prediction_load_tasks = [Load(from_date=t, to_date=t+1) for t in range(1914, 1942, 1)]
+        prediction_load_tasks = [Load(from_date=t, to_date=t+self.interval) for t in range(1914, 1942, self.interval)]
         sample_submission_data_task = LoadInputData(filename='sample_submission.csv')
         return dict(pred=prediction_load_tasks, submission=sample_submission_data_task)
 

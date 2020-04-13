@@ -85,7 +85,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
                 # df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).std())
                 # to_float32.append(column)
 
-        df['rolling_mean_lag1_win6'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(1).rolling(6).mean())
+        # df['rolling_mean_lag1_win6'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(1).rolling(6).mean())
 
         df[to_float32] = df[to_float32].astype("float32")
 
