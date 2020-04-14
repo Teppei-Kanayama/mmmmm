@@ -43,53 +43,60 @@ class MergeData(gokart.TaskOnKart):
         return sales
 
 
-class GetFirstSoldDate(gokart.TaskOnKart):
+class GetSoldOutDate(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()
+    window_size: int = luigi.IntParameter(default=60)
+    popular_item_threshold = luigi.IntParameter(default=1)
 
     def requires(self):
         return PreprocessSales(is_small=self.is_small, drop_old_data_days=0)
 
     def run(self):
         sales = self.load_data_frame()
-        output = self._run(sales)
+        output = self._run(sales, self.window_size, self.popular_item_threshold)
         self.dump(output)
 
     @staticmethod
-    def _run(sales):
-        sales = sales[~sales['demand'].isna()]
-        sales = sales[sales['demand'] != 0]  # 非ゼロの中で最小の日付
-        return sales.groupby('id', as_index=False).agg({'d': 'min'}).rename(columns={'d': 'first_sold_date'})
+    def _run(sales, window_size, popular_item_threshold):
+        sales['rolling_sum_backward'] = sales.groupby('id')['demand'].transform(lambda x: x.shift(0).rolling(window_size).mean())
+        sales['rolling_sum_forward'] = sales.groupby('id')['demand'].transform(lambda x: x.rolling(window_size).mean().shift(1-window_size))
+        sold_out_df = sales[(sales['rolling_sum_backward'] == 0) | (sales['rolling_sum_forward'] == 0)]
+
+        sales_agg = sales.groupby('id', as_index=False).agg({'demand': 'mean'})
+        sales_agg['is_popular'] = sales_agg['demand'] > popular_item_threshold
+        sold_out_df = pd.merge(sold_out_df, sales_agg[['id', 'is_popular']], on='id', how='left')
+        sold_out_df = sold_out_df[sold_out_df['is_popular']]
+        return sold_out_df[['id', 'd']]
 
 
 class MakeFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    delete_first_sold_date = luigi.BoolParameter()
+    delete_sold_out_date = luigi.BoolParameter(default=True)
     merged_data_task = gokart.TaskInstanceParameter()
     is_small: bool = luigi.BoolParameter()
 
     def requires(self):
-        return dict(data=self.merged_data_task, first_sold_date=GetFirstSoldDate(is_small=self.is_small))
+        return dict(data=self.merged_data_task, sold_out_date=GetSoldOutDate(is_small=self.is_small))
 
     def run(self):
         data = self.load_data_frame('data')
-        first_sold_date = self.load_data_frame('first_sold_date')
-        self.dump(self._run(data, first_sold_date, self.delete_first_sold_date))
+        sold_out_date = self.load_data_frame('sold_out_date')
+        self.dump(self._run(data, sold_out_date, self.delete_sold_out_date))
 
     @classmethod
-    def _run(cls, data, first_sold_date, delete_first_sold_date):
-        data = cls._delete_before_first_sold_date(data, first_sold_date) if delete_first_sold_date else data
+    def _run(cls, data, sold_out_date, delete_sold_out_date):
+        data = cls._delete_sold_out_date(data, sold_out_date) if delete_sold_out_date else data
         data = cls._label_encode(data)
         return data
 
     @staticmethod
-    def _delete_before_first_sold_date(data, first_sold_date):
-        data = pd.merge(data, first_sold_date, on='id', how='left').fillna(0)
-        data = data[data['d'] >= data['first_sold_date']]
-        data = data.drop('first_sold_date', axis=1)
-        return data
+    def _delete_sold_out_date(data, sold_out_date):
+        sold_out_date['drop'] = True
+        sold_out_date = pd.merge(data, sold_out_date, on=['id', 'd'], how='left').fillna(False)
+        return sold_out_date[~sold_out_date['drop']]
 
     @staticmethod
     def _label_encode(data):
