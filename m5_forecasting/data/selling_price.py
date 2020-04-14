@@ -21,11 +21,15 @@ class PreprocessSellingPrice(gokart.TaskOnKart):
 
     @classmethod
     def _run(cls, df: pd.DataFrame) -> pd.DataFrame:
-        # TODO: 意味を理解する
-        # TODO: そもそも商品が存在しない日はselling priceが無いことをかんがえると、悪さする可能性がある
         gr = df.groupby(["store_id", "item_id"])["sell_price"]
+
+        # 先週との変化率
         df["sell_price_rel_diff"] = gr.pct_change()
+
+        # その週までの最高値・最低値でmin-max normalization
         df["sell_price_cumrel"] = (gr.shift(0) - gr.cummin()) / (1 + gr.cummax() - gr.cummin())
+
+        # 過去7週間の分散
         df["sell_price_roll_sd7"] = cls._zapsmall(gr.transform(lambda x: x.rolling(7).std()))
 
         to_float32 = ["sell_price", "sell_price_rel_diff", "sell_price_cumrel", "sell_price_roll_sd7"]
