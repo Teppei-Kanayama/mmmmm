@@ -49,7 +49,7 @@ class GetSoldOutDate(gokart.TaskOnKart):
 
     is_small: bool = luigi.BoolParameter()
     window_size: int = luigi.IntParameter(default=60)
-    popular_item_threshold = luigi.IntParameter(default=1)
+    popular_item_threshold = luigi.IntParameter(default=10)
 
     def requires(self):
         return dict(sales=PreprocessSales(is_small=self.is_small), calendar=LoadInputData(filename='calendar.csv'),
@@ -89,7 +89,7 @@ class GetSoldOutDate(gokart.TaskOnKart):
 class MakeFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    delete_sold_out_date = luigi.BoolParameter(default=True)
+    delete_sold_out_date = luigi.BoolParameter(default=False)
     merged_data_task = gokart.TaskInstanceParameter()
     is_small: bool = luigi.BoolParameter()
 
@@ -111,7 +111,7 @@ class MakeFeature(gokart.TaskOnKart):
     def _delete_sold_out_date(data, sold_out_date):
         sold_out_date['did'] = sold_out_date['d'].astype(str) + sold_out_date['id']
         data['did'] = data['d'].astype(str) + data['id']
-        # sold_out_date = pd.merge(data, sold_out_date, on=['id', 'd'], how='left').fillna(False)  # TODO: merge -> isin
+        # sold_out_date = pd.merge(data, sold_out_date, on=['id', 'd'], how='left').fillna(False)
         # return sold_out_date[~sold_out_date['drop']]
         data = data[~data['did'].isin(sold_out_date['did'])]
         return data.drop('did', axis=1)

@@ -99,5 +99,5 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
         # TODO: must be removed?
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
-        df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
+        # df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
         return df

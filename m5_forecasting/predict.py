@@ -86,7 +86,7 @@ class Predict(gokart.TaskOnKart):
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_feature_task)
-        feature_task = MakeFeature(merged_data_task=merged_data_task)
+        feature_task = MakeFeature(merged_data_task=merged_data_task, delete_sold_out_date=False)
 
         return dict(model=trained_model_task, sales=sales_data_task, feature=feature_task)
 
