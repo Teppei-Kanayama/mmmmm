@@ -62,14 +62,12 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
     @staticmethod
     def _run(df, from_date, to_date):
-        # 28日空いているのは、最大で28日前までのデータしか無いため。
         buffer = 28 + 180  # TODO: decide buffer automatically
         if from_date and to_date:
             df = df[(from_date - buffer <= df['d']) & (df['d'] < to_date)]
 
         to_float32 = []
 
-        # TODO: longer trend?
         df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
         df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
         df['rolling_mean_t180'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(180).mean())
@@ -88,15 +86,18 @@ class MekeSalesFeature(gokart.TaskOnKart):
                 df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).mean())
                 to_float32.append(column)
 
+                # TODO: std? It is useless so far.
                 # column = f'rolling_std_lag{lag}_win{win}'
                 # df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).std())
                 # to_float32.append(column)
 
-        # df['rolling_mean_lag1_win6'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(1).rolling(6).mean())
+        # TODO: shorter lag? NOT good so far.
+        # df['rolling_mean_lag1_win13'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(1).rolling(13).mean())
+        # to_float32.append('rolling_mean_lag1_win13')
 
         df[to_float32] = df[to_float32].astype("float32")
 
         # TODO: must be removed?
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
-        # df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
+        df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
         return df
