@@ -7,6 +7,7 @@ import pandas as pd
 from sklearn.preprocessing import OrdinalEncoder
 from tqdm import tqdm
 
+from m5_forecasting.data.load import LoadInputData
 from m5_forecasting.data.sales import PreprocessSales
 
 logger = getLogger(__name__)
@@ -51,23 +52,37 @@ class GetSoldOutDate(gokart.TaskOnKart):
     popular_item_threshold = luigi.IntParameter(default=1)
 
     def requires(self):
-        return PreprocessSales(is_small=self.is_small, drop_old_data_days=0)
+        return dict(sales=PreprocessSales(is_small=self.is_small), calendar=LoadInputData(filename='calendar.csv'),
+                    sell_prices=LoadInputData(filename='sell_prices.csv'))
 
     def run(self):
-        sales = self.load_data_frame()
-        output = self._run(sales, self.window_size, self.popular_item_threshold)
+        sales = self.load_data_frame('sales')
+        calendar = self.load_data_frame('calendar')
+        sell_prices = self.load_data_frame('sell_prices')
+        output = self._run(sales, calendar, sell_prices, self.window_size, self.popular_item_threshold)
         self.dump(output)
 
     @staticmethod
-    def _run(sales, window_size, popular_item_threshold):
-        sales['rolling_sum_backward'] = sales.groupby('id')['demand'].transform(lambda x: x.shift(0).rolling(window_size).mean())
-        sales['rolling_sum_forward'] = sales.groupby('id')['demand'].transform(lambda x: x.rolling(window_size).mean().shift(1-window_size))
+    def _run(sales, calendar, sell_prices, window_size, popular_item_threshold):
+        # selling priceが存在しないitemに対し、擬似的にdemand+=1する
+        calendar = calendar.assign(d=calendar['d'].str[2:].astype(int))
+        sell_prices['id'] = sell_prices['item_id'] + '_' + sell_prices['store_id']
+        sell_prices = pd.merge(sell_prices[['id', 'wm_yr_wk', 'sell_price']], calendar[['d', 'wm_yr_wk']], on='wm_yr_wk', how='left')
+        sales = pd.merge(sales, sell_prices[['id', 'd', 'sell_price']], on=['id', 'd'], how='left').fillna(0)
+        sales['is_zero_sell_price'] = sales['sell_price'] == 0
+        sales['demand'] = sales['demand'] + sales['is_zero_sell_price']
+
+        # 売り切れ期間を見つける
+        sales['rolling_sum_backward'] = sales.groupby('id')['demand'].transform(lambda x: x.shift(0).rolling(window_size).sum())
+        sales['rolling_sum_forward'] = sales.groupby('id')['demand'].transform(lambda x: x.rolling(window_size).sum().shift(1-window_size))
         sold_out_df = sales[(sales['rolling_sum_backward'] == 0) | (sales['rolling_sum_forward'] == 0)]
 
+        # 人気itemのみに絞る（偶然0だった場合と区別するため）
         sales_agg = sales.groupby('id', as_index=False).agg({'demand': 'mean'})
         sales_agg['is_popular'] = sales_agg['demand'] > popular_item_threshold
         sold_out_df = pd.merge(sold_out_df, sales_agg[['id', 'is_popular']], on='id', how='left')
         sold_out_df = sold_out_df[sold_out_df['is_popular']]
+
         return sold_out_df[['id', 'd']]
 
 
@@ -94,9 +109,12 @@ class MakeFeature(gokart.TaskOnKart):
 
     @staticmethod
     def _delete_sold_out_date(data, sold_out_date):
-        sold_out_date['drop'] = True
-        sold_out_date = pd.merge(data, sold_out_date, on=['id', 'd'], how='left').fillna(False)
-        return sold_out_date[~sold_out_date['drop']]
+        sold_out_date['did'] = sold_out_date['d'].astype(str) + sold_out_date['id']
+        data['did'] = data['d'].astype(str) + data['id']
+        # sold_out_date = pd.merge(data, sold_out_date, on=['id', 'd'], how='left').fillna(False)  # TODO: merge -> isin
+        # return sold_out_date[~sold_out_date['drop']]
+        data = data[~data['did'].isin(sold_out_date['did'])]
+        return data.drop('did', axis=1)
 
     @staticmethod
     def _label_encode(data):
