@@ -24,9 +24,11 @@ class PreprocessSellingPrice(gokart.TaskOnKart):
         gr = df.groupby(["store_id", "item_id"])["sell_price"]
 
         # 先週との変化率
+        # TODO: 2週間・3週間などより広い範囲で見る
         df["sell_price_rel_diff"] = gr.pct_change()
 
         # その週までの最高値・最低値でmin-max normalization
+        # TODO: その週までではなく全体の最高値・最低値でnormalizeする
         df["sell_price_cumrel"] = (gr.shift(0) - gr.cummin()) / (1 + gr.cummax() - gr.cummin())
 
         # 過去7週間の分散
