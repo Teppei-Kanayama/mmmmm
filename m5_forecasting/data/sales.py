@@ -97,7 +97,14 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
         df[to_float32] = df[to_float32].astype("float32")
 
+        # TODO: sold out?
+        window_size = 60
+        df['rolling_sum_backward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(window_size).sum())
+        df['rolling_sum_forward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(window_size).sum().shift(1 - window_size))
+        df['sold_out'] = ((df['rolling_sum_backward'] == 0) | (df['rolling_sum_forward'] == 0)).astype(int)
+        df.drop(['rolling_sum_backward', 'rolling_sum_forward'], axis=1)
+
         # TODO: must be removed?
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
-        # df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
+        df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
         return df
