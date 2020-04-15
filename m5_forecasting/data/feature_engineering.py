@@ -89,7 +89,7 @@ class GetSoldOutDate(gokart.TaskOnKart):
 class MakeFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    delete_sold_out_date = luigi.BoolParameter(default=False)
+    delete_sold_out_date = luigi.BoolParameter(default=True)
     merged_data_task = gokart.TaskInstanceParameter()
     is_small: bool = luigi.BoolParameter()
 
