@@ -75,7 +75,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
         to_float32.append('rolling_mean_t90')
         to_float32.append('rolling_mean_t180')
 
-        lags = [7, 28]
+        lags = [7, 14, 21, 28, 35]  # TODO: more types of lags?
         wins = [7, 28]
         for lag in lags:
             column = f'lag{lag}'
@@ -97,14 +97,13 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
         df[to_float32] = df[to_float32].astype("float32")
 
-        # TODO: sold out?
-        window_size = 60
-        df['rolling_sum_backward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(window_size).sum())
-        df['rolling_sum_forward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(window_size).sum().shift(1 - window_size))
-        df['sold_out'] = ((df['rolling_sum_backward'] == 0) | (df['rolling_sum_forward'] == 0)).astype(int)
-        df = df.drop(['rolling_sum_backward', 'rolling_sum_forward'], axis=1)
+        wins = [60, 120]
+        for win in wins:
+            df['rolling_sum_backward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum())
+            df['rolling_sum_forward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum().shift(1 - win))
+            df[f'sold_out_{win}'] = ((df['rolling_sum_backward'] == 0) | (df['rolling_sum_forward'] == 0)).astype(int)
+            df = df.drop(['rolling_sum_backward', 'rolling_sum_forward'], axis=1)
 
-        # TODO: must be removed?
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
         df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
         return df
