@@ -10,10 +10,11 @@ def main():
         subprocess.run(['python', 'main.py', 'm5-forecasting.Predict', f'--from-date={t}', f'--to-date={t+interval}',
                         f'--interval={interval}', '--local-scheduler'])
     subprocess.run(['python', 'main.py', 'm5-forecasting.Submit', f'--interval={interval}', '--local-scheduler'])
+    subprocess.run(['python', 'main.py', 'm5-forecasting.PredictUncertainty', f'--interval={interval}', '--local-scheduler'])
 
 
 if __name__ == '__main__':
     main()
 
-# python script/predict_batch.py 7
-# python script/predict_batch.py 1
+# DATA_SIZE=small python script/predict_uncertainty_batch.py 7
+
