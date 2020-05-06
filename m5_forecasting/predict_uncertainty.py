@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Dict, Union
 
 import gokart
 import luigi
@@ -29,6 +29,7 @@ class PredictUncertainty(gokart.TaskOnKart):
     def requires(self):
         # accuracy_task = Submit(is_small=self.is_small, interval=self.interval)
         accuracy_task = LoadInputData(filename='kkiller_first_public_notebook_under050_v5.csv')
+        # accuracy_task = LoadInputData(filename='submission_1499b9c5b60efee9f8358927876a8d26.csv')
         sales_data_task = LoadInputData(filename='sales_train_validation.csv')
         return dict(accuracy=accuracy_task, sales=sales_data_task)
 
@@ -40,23 +41,36 @@ class PredictUncertainty(gokart.TaskOnKart):
 
     @classmethod
     def _run(cls, accuracy, sales):
-        ratios = cls._transform_qs_to_ratio(PERCENTILES)
         sub = accuracy.merge(sales[["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"]], on="id")
         sub["_all_"] = "Total"
-        df_list = [cls._calculate_uncertainty(sub, ratios, levels) for levels in (LEVELS + COUPLES)]
+        level_coef_dict = {"id": cls._transform_qs_to_ratio(coef=0.3),
+                           "item_id": cls._transform_qs_to_ratio(coef=0.15),
+                           "dept_id": cls._transform_qs_to_ratio(coef=0.08),
+                           "cat_id": cls._transform_qs_to_ratio(coef=0.07),
+                           "store_id": cls._transform_qs_to_ratio(coef=0.08),
+                           "state_id": cls._transform_qs_to_ratio(coef=0.07),
+                           "_all_": cls._transform_qs_to_ratio(coef=0.05),
+                           ("state_id", "item_id"): cls._transform_qs_to_ratio(coef=0.19),
+                           ("state_id", "dept_id"): cls._transform_qs_to_ratio(coef=0.1),
+                           ("store_id", "dept_id"): cls._transform_qs_to_ratio(coef=0.11),
+                           ("state_id", "cat_id"): cls._transform_qs_to_ratio(coef=0.08),
+                           ("store_id", "cat_id"): cls._transform_qs_to_ratio(coef=0.1)}
+        df_list = [cls._calculate_uncertainty(sub, level_coef_dict, levels) for levels in (LEVELS + COUPLES)]
         df = pd.concat(df_list, axis=0, sort=False).reset_index(drop=True)
         return cls._make_submission(df)
 
     @staticmethod
-    def _transform_qs_to_ratio(qs: np.ndarray) -> pd.Series:
-        qs2 = np.log(qs / (1 - qs)) * .065
+    def _transform_qs_to_ratio(coef: float) -> pd.Series:
+        qs2 = np.log(PERCENTILES / (1 - PERCENTILES)) * coef
         ratios = stats.norm.cdf(qs2)
         ratios /= ratios[4]
-        ratios = pd.Series(ratios, index=qs)
-        return ratios
+        ratios = pd.Series(ratios, index=PERCENTILES)
+        return ratios.round(3)
 
     @staticmethod
-    def _calculate_uncertainty(point_prediction: pd.DataFrame, ratios: pd.Series, levels):
+    def _calculate_uncertainty(point_prediction: pd.DataFrame, level_coef_dict: Dict, levels: Union[str, List]):
+        level_key = tuple(levels) if type(levels) is list else levels
+        ratios = level_coef_dict[level_key]
         df = point_prediction.groupby(levels)[COLS].sum()
         q = np.repeat(ratios.index, len(df))  # [0.005, ,,, 0.005, ,,, 0.995, ,,, ,0.995]
         df = pd.concat([df] * 9, axis=0, sort=False).reset_index()
@@ -81,3 +95,4 @@ class PredictUncertainty(gokart.TaskOnKart):
 
 
 # DATA_SIZE=small python main.py m5-forecasting.PredictUncertainty --interval=7 --local-scheduler
+# python main.py m5-forecasting.PredictUncertainty --interval=7 --local-scheduler
