@@ -1,5 +1,5 @@
-from m5_forecasting.train import TrainPointwiseModel
-from m5_forecasting.predict import PredictPointwise
-from m5_forecasting.submit import SubmitPointwise
+from m5_forecasting.pointwise_tasks.train import TrainPointwiseModel
+from m5_forecasting.pointwise_tasks.predict import PredictPointwise
+from m5_forecasting.pointwise_tasks.submit import SubmitPointwise
 
-from m5_forecasting.predict_uncertainty import PredictUncertainty
+from m5_forecasting.uncertainty_tasks.predict_uncertainty import PredictUncertainty

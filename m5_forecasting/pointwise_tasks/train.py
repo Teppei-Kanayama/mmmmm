@@ -9,7 +9,7 @@ from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
 from m5_forecasting.data.sales import PreprocessSales, MekeSalesFeature
 from m5_forecasting.data.selling_price import PreprocessSellingPrice
 from m5_forecasting.data.train_validation_split import TrainValidationSplit
-from m5_forecasting.tasks.run_lgbm import TrainPointwiseLGBM
+from m5_forecasting.pointwise_tasks.run_lgbm import TrainPointwiseLGBM
 
 
 logger = getLogger(__name__)
