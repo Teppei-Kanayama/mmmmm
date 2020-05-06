@@ -7,7 +7,7 @@ import pandas as pd
 import scipy.stats as stats
 
 from m5_forecasting.data.load import LoadInputData
-
+from m5_forecasting.utils.file_processors import RoughCsvFileProcessor
 
 PERCENTILES = np.array([0.005, 0.025, 0.165, 0.25, 0.5, 0.75, 0.835, 0.975, 0.995])
 
@@ -24,12 +24,12 @@ class PredictUncertainty(gokart.TaskOnKart):
     interval: int = luigi.IntParameter()
 
     def output(self):
-        return self.make_target('submission_uncertainty.csv')
+        return self.make_target('submission_uncertainty.csv', processor=RoughCsvFileProcessor())
 
     def requires(self):
         # accuracy_task = Submit(is_small=self.is_small, interval=self.interval)
-        accuracy_task = LoadInputData(filename='kkiller_first_public_notebook_under050_v5.csv')
-        # accuracy_task = LoadInputData(filename='submission_1499b9c5b60efee9f8358927876a8d26.csv')
+        # accuracy_task = LoadInputData(filename='kkiller_first_public_notebook_under050_v5.csv')
+        accuracy_task = LoadInputData(filename='submission_1499b9c5b60efee9f8358927876a8d26.csv')
         sales_data_task = LoadInputData(filename='sales_train_validation.csv')
         return dict(accuracy=accuracy_task, sales=sales_data_task)
 
