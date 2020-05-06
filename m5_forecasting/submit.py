@@ -29,7 +29,7 @@ class Load(gokart.TaskOnKart):
                                 use_unique_id=False)
 
 
-class Submit(gokart.TaskOnKart):
+class SubmitPointwise(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()

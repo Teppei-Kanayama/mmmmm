@@ -11,7 +11,7 @@ from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
 from m5_forecasting.data.sales import PreprocessSales, MekeSalesFeature
 from m5_forecasting.data.selling_price import PreprocessSellingPrice
-from m5_forecasting.train import Train
+from m5_forecasting.train import TrainPointwiseModel
 
 logger = getLogger(__name__)
 
@@ -59,7 +59,7 @@ class ConcatPredictionData(gokart.TaskOnKart):
         self.dump(pd.concat(self.load()))
 
 
-class Predict(gokart.TaskOnKart):
+class PredictPointwise(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()
@@ -73,7 +73,7 @@ class Predict(gokart.TaskOnKart):
                                 use_unique_id=False)
 
     def requires(self):
-        trained_model_task = Train()
+        trained_model_task = TrainPointwiseModel()
         assert trained_model_task.input()['model'].exists(), "trained model doesn't exists!"
 
         calendar_data_task = PreprocessCalendar()

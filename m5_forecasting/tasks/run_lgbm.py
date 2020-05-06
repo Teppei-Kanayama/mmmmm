@@ -10,7 +10,7 @@ import lightgbm as lgb
 logger = getLogger(__name__)
 
 
-class TrainLGBM(gokart.TaskOnKart):
+class TrainPointwiseLGBM(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     num_boost_round: int = luigi.IntParameter()
