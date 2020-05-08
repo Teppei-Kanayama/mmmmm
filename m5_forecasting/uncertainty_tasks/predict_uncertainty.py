@@ -17,6 +17,37 @@ COUPLES = [["state_id", "item_id"], ["state_id", "dept_id"], ["store_id", "dept_
 COLS = [f"F{i}" for i in range(1, 29)]
 
 
+class CalculateVariance(gokart.TaskOnKart):
+    task_namespace = 'm5-forecasting'
+
+    def requires(self):
+        return LoadInputData(filename='sales_train_validation.csv')
+
+    def run(self):
+        sales = self.load_data_frame()
+        sales["_all_"] = "Total"
+        level_list = [["item_id"], ["dept_id"], ["cat_id"], ["store_id"], ["state_id"], ["_all_"],
+                      ["state_id", "item_id"], ["state_id", "dept_id"], ["store_id", "dept_id"],
+                      ["state_id", "cat_id"], ["store_id", "cat_id"]]
+        training_columns = [f'd_{i}' for i in range(1913 - 365 + 1, 1913 + 1)]
+
+        variance_list = []
+        for level in level_list:
+            agg_sales = sales[level + training_columns].groupby(level).sum()
+            sales_variance = agg_sales.var(axis=1).reset_index().rename(columns={0: 'variance'})
+            sales_variance['sigma'] = np.sqrt(sales_variance['variance'])
+            if len(level) > 1:
+                sales_variance["id"] = [f"{lev1}_{lev2}_validation" for lev1, lev2 in
+                            zip(sales_variance[level[0]].values, sales_variance[level[1]].values)]
+            else:
+                sales_variance["id"] = [f"{lev}_X_validation" for lev in sales_variance[level[0]].values]
+
+            variance_list.append(sales_variance)
+
+        variance_df = pd.concat(variance_list)
+        self.dump(variance_df[['id', 'sigma']])
+
+
 class PredictUncertainty(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
@@ -96,3 +127,5 @@ class PredictUncertainty(gokart.TaskOnKart):
 
 # DATA_SIZE=small python main.py m5-forecasting.PredictUncertainty --interval=7 --local-scheduler
 # python main.py m5-forecasting.PredictUncertainty --interval=7 --local-scheduler
+
+# python main.py m5-forecasting.CalculateVariance --local-scheduler
