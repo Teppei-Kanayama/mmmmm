@@ -6,19 +6,18 @@ def main():
     variance_duration = 2  # 10くらいが適切？
     variance_from_date = 1914 - 7 * variance_duration
     variance_to_date = 1914
-
-    # pointwise
-    subprocess.run(['python', 'main.py', 'm5-forecasting.TrainPointwiseModel', f'--train-to-date={variance_from_date}', '--local-scheduler'])
     interval = int(sys.argv[1])
 
-    for t in range(variance_from_date, variance_to_date, interval):
-        subprocess.run(
-            ['python', 'main.py', 'm5-forecasting.PredictPointwise',
-             f'--prediction-start-date={variance_from_date}',
-             f'--predict-from-date={t}',
-             f'--predict-to-date={t + interval}',
-             f'--interval={interval}',
-             '--local-scheduler'])
+    # # pointwise
+    # subprocess.run(['python', 'main.py', 'm5-forecasting.TrainPointwiseModel', f'--train-to-date={variance_from_date}', '--local-scheduler'])
+    # for t in range(variance_from_date, variance_to_date, interval):
+    #     subprocess.run(
+    #         ['python', 'main.py', 'm5-forecasting.PredictPointwise',
+    #          f'--prediction-start-date={variance_from_date}',
+    #          f'--predict-from-date={t}',
+    #          f'--predict-to-date={t + interval}',
+    #          f'--interval={interval}',
+    #          '--local-scheduler'])
 
     # uncertainty
     subprocess.run(
