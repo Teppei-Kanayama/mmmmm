@@ -33,6 +33,7 @@ class CalculateVariance(gokart.TaskOnKart):
         df["_all_"] = "Total"
 
         # TODO: DRY
+        # ["id"] などをlistに統一する
         level_list = [["id"], ["item_id"], ["dept_id"], ["cat_id"], ["store_id"], ["state_id"], ["_all_"],
                       ["state_id", "item_id"], ["state_id", "dept_id"], ["store_id", "dept_id"], ["state_id", "cat_id"],
                       ["store_id", "cat_id"]]
@@ -46,18 +47,6 @@ class CalculateVariance(gokart.TaskOnKart):
             variance_df = cross_join(agg_df, percentile_df)
             variance_df['percentile_diff'] = variance_df['sigma'] * variance_df['n_sigma']
             variance_df['id'] = get_uncertainty_ids(variance_df, level)
-
-            # TODO: DRY
-            # if len(level) > 1:
-            #     variance_df["id"] = [f"{lev1}_{lev2}_{q:.3f}_validation" for lev1, lev2, q in
-            #                             zip(variance_df[level[0]].values, variance_df[level[1]].values,
-            #                                 variance_df['percentile'].values)]
-            # elif level[0] == "id":
-            #     variance_df["id"] = [f"{lev.replace('_validation', '')}_{q:.3f}_validation" for lev, q in
-            #                          zip(variance_df['id'].values, variance_df['percentile'])]
-            # else:
-            #     variance_df["id"] = [f"{lev}_X_{q:.3f}_validation" for lev, q in
-            #                          zip(variance_df[level[0]].values, variance_df['percentile'].values)]
             variance_list.append(variance_df)
 
         variance = pd.concat(variance_list)
