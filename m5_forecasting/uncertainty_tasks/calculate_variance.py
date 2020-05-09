@@ -6,7 +6,7 @@ from scipy.stats import norm
 from m5_forecasting.data.sales import PreprocessSales
 from m5_forecasting.pointwise_tasks.submit import Load
 from m5_forecasting.uncertainty_tasks.constant_values import *
-from m5_forecasting.utils.pandas_utils import cross_join
+from m5_forecasting.utils.pandas_utils import cross_join, get_uncertainty_ids
 
 
 class CalculateVariance(gokart.TaskOnKart):
@@ -32,6 +32,7 @@ class CalculateVariance(gokart.TaskOnKart):
         df['diff'] = df['demand_gt'] - df['demand_pred']
         df["_all_"] = "Total"
 
+        # TODO: DRY
         level_list = [["id"], ["item_id"], ["dept_id"], ["cat_id"], ["store_id"], ["state_id"], ["_all_"],
                       ["state_id", "item_id"], ["state_id", "dept_id"], ["store_id", "dept_id"], ["state_id", "cat_id"],
                       ["store_id", "cat_id"]]
@@ -44,18 +45,19 @@ class CalculateVariance(gokart.TaskOnKart):
             percentile_df['n_sigma'] = percentile_df['percentile'].apply(norm.ppf)
             variance_df = cross_join(agg_df, percentile_df)
             variance_df['percentile_diff'] = variance_df['sigma'] * variance_df['n_sigma']
+            variance_df['id'] = get_uncertainty_ids(variance_df, level)
 
             # TODO: DRY
-            if len(level) > 1:
-                variance_df["id"] = [f"{lev1}_{lev2}_{q:.3f}_validation" for lev1, lev2, q in
-                                        zip(variance_df[level[0]].values, variance_df[level[1]].values,
-                                            variance_df['percentile'].values)]
-            elif level[0] == "id":
-                variance_df["id"] = [f"{lev.replace('_validation', '')}_{q:.3f}_validation" for lev, q in
-                                     zip(variance_df['id'].values, variance_df['percentile'])]
-            else:
-                variance_df["id"] = [f"{lev}_X_{q:.3f}_validation" for lev, q in
-                                     zip(variance_df[level[0]].values, variance_df['percentile'].values)]
+            # if len(level) > 1:
+            #     variance_df["id"] = [f"{lev1}_{lev2}_{q:.3f}_validation" for lev1, lev2, q in
+            #                             zip(variance_df[level[0]].values, variance_df[level[1]].values,
+            #                                 variance_df['percentile'].values)]
+            # elif level[0] == "id":
+            #     variance_df["id"] = [f"{lev.replace('_validation', '')}_{q:.3f}_validation" for lev, q in
+            #                          zip(variance_df['id'].values, variance_df['percentile'])]
+            # else:
+            #     variance_df["id"] = [f"{lev}_X_{q:.3f}_validation" for lev, q in
+            #                          zip(variance_df[level[0]].values, variance_df['percentile'].values)]
             variance_list.append(variance_df)
 
         variance = pd.concat(variance_list)
