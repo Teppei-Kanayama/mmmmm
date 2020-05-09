@@ -26,7 +26,8 @@ class PredictUncertaintyWithPoisson(gokart.TaskOnKart):
     def _run(cls, accuracy: pd.DataFrame) -> pd.DataFrame:
         accuracy = accuracy[accuracy['id'].str.contains('validation')]
         poisson_distribution_df = cls._get_poisson_distribution_df()
-        df_point = cross_join(accuracy, poisson_distribution_df)
+        percentile_df = pd.DataFrame(dict(percentile=PERCENTILES))
+        df_point = cross_join(accuracy, percentile_df)
         df_point.loc[:, COLS] = df_point.loc[:, COLS].round()
 
         df_list = []
@@ -35,7 +36,7 @@ class PredictUncertaintyWithPoisson(gokart.TaskOnKart):
             df = df[['id', 'percentile', 'value']].rename(columns={'value': col})
             df_list.append(df)
         df_final = reduce(lambda x, y: pd.merge(x, y), df_list)
-        df_final['id'] = [f"{lev.replace('_validation', '')}_{q: .3f}_validation" for lev, q in zip(df_final['id'].values, df_final['percentile'].values)]
+        df_final['id'] = [f"{lev.replace('_validation', '')}_{q:.3f}_validation" for lev, q in zip(df_final['id'].values, df_final['percentile'].values)]
         df_final = df_final.drop('percentile', axis=1)
         df_final = df_final[~df_final['id'].str.contains('0.500')]
         return df_final
