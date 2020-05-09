@@ -1,27 +1,10 @@
-from typing import List, Dict, Union
-
 import gokart
-import luigi
-import numpy as np
 import pandas as pd
-import scipy.stats as stats
 from scipy.stats import norm
 
 from m5_forecasting.data.load import LoadInputData
-from m5_forecasting.utils.file_processors import RoughCsvFileProcessor
-
-PERCENTILES = np.array([0.005, 0.025, 0.165, 0.25, 0.5, 0.75, 0.835, 0.975, 0.995])
-
-LEVELS = ["id", "item_id", "dept_id", "cat_id", "store_id", "state_id", "_all_"]
-COUPLES = [["state_id", "item_id"], ["state_id", "dept_id"], ["store_id", "dept_id"], ["state_id", "cat_id"],
-           ["store_id", "cat_id"]]
-COLS = [f"F{i}" for i in range(1, 29)]
-
-
-def cross_join(df1, df2):
-    df1['key'] = 0
-    df2['key'] = 0
-    return df1.merge(df2, how='outer').drop('key', axis=1)
+from m5_forecasting.uncertainty_tasks.constant_values import *
+from m5_forecasting.utils.pandas_utils import cross_join
 
 
 class CalculateVariance(gokart.TaskOnKart):
