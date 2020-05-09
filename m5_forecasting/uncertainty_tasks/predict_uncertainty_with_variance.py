@@ -63,11 +63,20 @@ class PredictUncertaintyWithVariance(gokart.TaskOnKart):
         self.dump(output)
 
     @classmethod
-    def _run(cls, accuracy, sales, variance):
+    def _run(cls, accuracy: pd.DataFrame, sales: pd.DataFrame, variance: pd.DataFrame) -> pd.DataFrame:
         sub = accuracy.merge(sales[["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"]], on="id")
         sub["_all_"] = "Total"
         df_list = [cls._calculate_uncertaity(sub, variance, levels) for levels in (COUPLES + LEVELS)]
         df = pd.concat(df_list, axis=0, sort=False).reset_index(drop=True)
+        df = cls._float_to_int(df)
+        return df
+
+    @staticmethod
+    def _float_to_int(df: pd.DataFrame) -> pd.DataFrame:
+        for u in PERCENTILE_LOWERS:
+            df.loc[df['id'].str.contains(str(u)), COLS] = np.floor(df.loc[df['id'].str.contains(str(u)), COLS])
+        for u in PERCENTILE_UPPERS:
+            df.loc[df['id'].str.contains(str(u)), COLS] = np.ceil(df.loc[df['id'].str.contains(str(u)), COLS])
         return df
 
     @staticmethod
