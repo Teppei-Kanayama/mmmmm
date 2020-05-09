@@ -1,13 +1,11 @@
 from typing import List, Dict, Union
 
 import gokart
-import luigi
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
 from m5_forecasting.data.load import LoadInputData
-from m5_forecasting.utils.file_processors import RoughCsvFileProcessor
 
 PERCENTILES = np.array([0.005, 0.025, 0.165, 0.25, 0.5, 0.75, 0.835, 0.975, 0.995])
 
@@ -20,14 +18,7 @@ COLS = [f"F{i}" for i in range(1, 29)]
 class PredictUncertainty(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    # is_small: bool = luigi.BoolParameter()
-    # interval: int = luigi.IntParameter()
-
-    # def output(self):
-    #     return self.make_target('submission_uncertainty.csv', processor=RoughCsvFileProcessor())
-
     def requires(self):
-        # accuracy_task = Submit(is_small=self.is_small, interval=self.interval)
         accuracy_task = LoadInputData(filename='kkiller_first_public_notebook_under050_v5.csv')
         # accuracy_task = LoadInputData(filename='submission_1499b9c5b60efee9f8358927876a8d26.csv')
         sales_data_task = LoadInputData(filename='sales_train_validation.csv')
@@ -57,7 +48,7 @@ class PredictUncertainty(gokart.TaskOnKart):
                            ("store_id", "cat_id"): cls._transform_qs_to_ratio(coef=0.1)}
         df_list = [cls._calculate_uncertainty(sub, level_coef_dict, levels) for levels in (LEVELS + COUPLES)]
         df = pd.concat(df_list, axis=0, sort=False).reset_index(drop=True)
-        return cls._make_submission(df)
+        return df
 
     @staticmethod
     def _transform_qs_to_ratio(coef: float) -> pd.Series:
@@ -83,14 +74,6 @@ class PredictUncertainty(gokart.TaskOnKart):
         else:
             df["id"] = [f"{lev.replace('_validation', '')}_{q:.3f}_validation" for lev, q in zip(df[levels].values, q)]
         df = df[["id"] + COLS]
-        return df
-
-    @staticmethod
-    def _make_submission(df: pd.DataFrame) -> pd.DataFrame:
-        df = pd.concat([df, df], axis=0, sort=False)
-        df.reset_index(drop=True, inplace=True)
-        df.loc[df.index >= len(df.index) // 2, "id"] = df.loc[df.index >= len(df.index) // 2, "id"].str.replace(
-            "_validation$", "_evaluation")
         return df
 
 

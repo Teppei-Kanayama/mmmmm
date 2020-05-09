@@ -65,14 +65,7 @@ class CalculateVariance(gokart.TaskOnKart):
 class PredictUncertaintyWithVariance(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    # is_small: bool = luigi.BoolParameter()
-    # interval: int = luigi.IntParameter()
-
-    # def output(self):
-    #     return self.make_target('submission_uncertainty.csv', processor=RoughCsvFileProcessor())
-
     def requires(self):
-        # accuracy_task = Submit(is_small=self.is_small, interval=self.interval)
         accuracy_task = LoadInputData(filename='kkiller_first_public_notebook_under050_v5.csv')
         # accuracy_task = LoadInputData(filename='submission_1499b9c5b60efee9f8358927876a8d26.csv')
         sales_data_task = LoadInputData(filename='sales_train_validation.csv')
@@ -90,30 +83,12 @@ class PredictUncertaintyWithVariance(gokart.TaskOnKart):
     def _run(cls, accuracy, sales, variance):
         sub = accuracy.merge(sales[["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"]], on="id")
         sub["_all_"] = "Total"
-        # level_coef_dict = {"id": cls._transform_qs_to_ratio(coef=0.3),
-        #                    "item_id": cls._transform_qs_to_ratio(coef=0.15),
-        #                    "dept_id": cls._transform_qs_to_ratio(coef=0.08),
-        #                    "cat_id": cls._transform_qs_to_ratio(coef=0.07),
-        #                    "store_id": cls._transform_qs_to_ratio(coef=0.08),
-        #                    "state_id": cls._transform_qs_to_ratio(coef=0.07),
-        #                    "_all_": cls._transform_qs_to_ratio(coef=0.05),
-        #                    ("state_id", "item_id"): cls._transform_qs_to_ratio(coef=0.19),
-        #                    ("state_id", "dept_id"): cls._transform_qs_to_ratio(coef=0.1),
-        #                    ("store_id", "dept_id"): cls._transform_qs_to_ratio(coef=0.11),
-        #                    ("state_id", "cat_id"): cls._transform_qs_to_ratio(coef=0.08),
-        #                    ("store_id", "cat_id"): cls._transform_qs_to_ratio(coef=0.1)}
-        # df_list = [cls._calculate_uncertainty(sub, level_coef_dict, levels) for levels in (LEVELS + COUPLES)]
-        # df = pd.concat(df_list, axis=0, sort=False).reset_index(drop=True)
-
-        df2_list = [cls._calculate_uncertaity_with_variance(sub, variance, levels) for levels in (COUPLES + LEVELS)]
-        df2 = pd.concat(df2_list, axis=0, sort=False).reset_index(drop=True)
-
-        # df = pd.concat([df[~df['id'].isin(df2['id'])], df2])
-        # return cls._make_submission(df)
-        return df2
+        df_list = [cls._calculate_uncertaity(sub, variance, levels) for levels in (COUPLES + LEVELS)]
+        df = pd.concat(df_list, axis=0, sort=False).reset_index(drop=True)
+        return df
 
     @staticmethod
-    def _calculate_uncertaity_with_variance(point_prediction, variance, levels):
+    def _calculate_uncertaity(point_prediction, variance, levels):
         df = point_prediction.groupby(levels)[COLS].sum()
         q = np.repeat(PERCENTILES, len(df))
         df = pd.concat([df] * 9, axis=0, sort=False).reset_index()
@@ -128,41 +103,8 @@ class PredictUncertaintyWithVariance(gokart.TaskOnKart):
 
         df = pd.merge(df, variance)
         df.loc[:, COLS] = df[COLS].values + (df[['percentile_diff'] * len(COLS)]).values
+        df.loc[:, COLS] = df[COLS].clip(0)
         return df.drop('percentile_diff', axis=1)
-
-    @staticmethod
-    def _transform_qs_to_ratio(coef: float) -> pd.Series:
-        qs2 = np.log(PERCENTILES / (1 - PERCENTILES)) * coef
-        ratios = stats.norm.cdf(qs2)
-        ratios /= ratios[4]
-        ratios = pd.Series(ratios, index=PERCENTILES)
-        return ratios.round(3)
-
-    @staticmethod
-    def _calculate_uncertainty(point_prediction: pd.DataFrame, level_coef_dict: Dict, levels: Union[str, List]):
-        level_key = tuple(levels) if type(levels) is list else levels
-        ratios = level_coef_dict[level_key]
-        df = point_prediction.groupby(levels)[COLS].sum()
-        q = np.repeat(ratios.index, len(df))  # [0.005, ,,, 0.005, ,,, 0.995, ,,, ,0.995]
-        df = pd.concat([df] * 9, axis=0, sort=False).reset_index()
-        df[COLS] *= ratios.loc[q].values[:, None]  # 点予測の値をuncertaintyの予測に変換する # ここが一番重要
-
-        if type(levels) == list:
-            df["id"] = [f"{lev1}_{lev2}_{q:.3f}_validation" for lev1, lev2, q in zip(df[levels[0]].values, df[levels[1]].values, q)]
-        elif levels != "id":
-            df["id"] = [f"{lev}_X_{q:.3f}_validation" for lev, q in zip(df[levels].values, q)]
-        else:
-            df["id"] = [f"{lev.replace('_validation', '')}_{q:.3f}_validation" for lev, q in zip(df[levels].values, q)]
-        df = df[["id"] + COLS]
-        return df
-
-    # @staticmethod
-    # def _make_submission(df: pd.DataFrame) -> pd.DataFrame:
-    #     df = pd.concat([df, df], axis=0, sort=False)
-    #     df.reset_index(drop=True, inplace=True)
-    #     df.loc[df.index >= len(df.index) // 2, "id"] = df.loc[df.index >= len(df.index) // 2, "id"].str.replace(
-    #         "_validation$", "_evaluation")
-    #     return df
 
 
 # DATA_SIZE=small python main.py m5-forecasting.PredictUncertainty --interval=7 --local-scheduler
