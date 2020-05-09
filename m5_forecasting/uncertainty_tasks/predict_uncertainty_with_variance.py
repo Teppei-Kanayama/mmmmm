@@ -31,7 +31,7 @@ class CalculateVariance(gokart.TaskOnKart):
             percentile_df['n_sigma'] = percentile_df['percentile'].apply(norm.ppf)
 
             sales_variance = cross_join(sales_variance, percentile_df)
-            sales_variance['percentile_diff'] = sales_variance['sigma'] * sales_variance['n_sigma'] / 2  # TODO: this is adhock
+            sales_variance['percentile_diff'] = sales_variance['sigma'] * sales_variance['n_sigma'] / 2.2  # TODO: this is adhock
 
             if len(level) > 1:
                 sales_variance["id"] = [f"{lev1}_{lev2}_{q:.3f}_validation" for lev1, lev2, q in
