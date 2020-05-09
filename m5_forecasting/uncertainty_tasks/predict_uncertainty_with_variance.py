@@ -75,6 +75,8 @@ class PredictUncertaintyWithVariance(gokart.TaskOnKart):
         df = point_prediction.groupby(levels)[COLS].sum()
         q = np.repeat(PERCENTILES, len(df))
         df = pd.concat([df] * 9, axis=0, sort=False).reset_index()
+
+        # TODO: DRY
         if type(levels) == list:
             df["id"] = [f"{lev1}_{lev2}_{q:.3f}_validation" for lev1, lev2, q in
                         zip(df[levels[0]].values, df[levels[1]].values, q)]
