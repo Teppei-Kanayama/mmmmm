@@ -17,9 +17,9 @@ logger = getLogger(__name__)
 
 # best score: 0.549 (再現済み)
 
-VALIDATION_START_DATE = 1914
-EVALUATION_START_DATE = 1942
-DURATION = 28
+# VALIDATION_START_DATE = 1914
+# EVALUATION_START_DATE = 1942
+# DURATION = 28
 
 
 class EmptySalesTask(gokart.TaskOnKart):
@@ -64,25 +64,26 @@ class PredictPointwise(gokart.TaskOnKart):
 
     is_small: bool = luigi.BoolParameter()
 
-    from_date: int = luigi.IntParameter()
-    to_date: int = luigi.IntParameter()
+    prediction_start_date: int = luigi.IntParameter(default=1914)  # 予測開始日（固定）
+    predict_from_date: int = luigi.IntParameter()  # 分割後の予測開始日
+    predict_to_date: int = luigi.IntParameter()  # 分割後の予測終了日
     interval: int = luigi.IntParameter()
 
     def output(self):
-        return self.make_target(os.path.join('predict', f'predict_{self.from_date}_{self.to_date}.csv'),
+        return self.make_target(os.path.join('predict', f'predict_{self.predict_from_date}_{self.predict_to_date}.csv'),
                                 use_unique_id=False)
 
     def requires(self):
-        trained_model_task = TrainPointwiseModel()
+        trained_model_task = TrainPointwiseModel(train_to_date=self.prediction_start_date)
         assert trained_model_task.input()['model'].exists(), "trained model doesn't exists!"
 
         calendar_data_task = PreprocessCalendar()
         selling_price_data_task = PreprocessSellingPrice()
         sales_data_task = PreprocessSales(is_small=self.is_small)
-        predicted_sales_data_task = ConcatPredictionData(from_date=VALIDATION_START_DATE, to_date=self.from_date,
+        predicted_sales_data_task = ConcatPredictionData(from_date=self.prediction_start_date, to_date=self.predict_from_date,
                                                          interval=self.interval)
-        sales_feature_task = MekeSalesFeature(sales_data_task=sales_data_task, from_date=self.from_date,
-                                              to_date=self.to_date, predicted_sales_data_task=predicted_sales_data_task)
+        sales_feature_task = MekeSalesFeature(sales_data_task=sales_data_task, from_date=self.predict_from_date,
+                                              to_date=self.predict_to_date, predicted_sales_data_task=predicted_sales_data_task)
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_feature_task)
@@ -96,7 +97,7 @@ class PredictPointwise(gokart.TaskOnKart):
         feature = self.load_data_frame('feature')
         sales = self.load_data_frame('sales')
 
-        output = self._run(model, feature_columns, feature, sales, self.from_date, self.to_date)
+        output = self._run(model, feature_columns, feature, sales, self.predict_from_date, self.predict_to_date)
         self.dump(output)
 
     @staticmethod

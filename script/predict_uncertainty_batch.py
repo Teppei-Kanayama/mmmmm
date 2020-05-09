@@ -3,18 +3,30 @@ import sys
 
 
 def main():
+    variance_duration = 2  # 10くらいが適切？
+    variance_from_date = 1914 - 7 * variance_duration
+    variance_to_date = 1914
+
     # pointwise
-    subprocess.run(['python', 'main.py', 'm5-forecasting.TrainPointwiseModel', '--local-scheduler'])
+    subprocess.run(['python', 'main.py', 'm5-forecasting.TrainPointwiseModel', f'--train-to-date={variance_from_date}', '--local-scheduler'])
     interval = int(sys.argv[1])
-    for t in range(1914, 1942, interval):
+
+    for t in range(variance_from_date, variance_to_date, interval):
         subprocess.run(
-            ['python', 'main.py', 'm5-forecasting.PredictPointwise', f'--from-date={t}', f'--to-date={t + interval}',
-             f'--interval={interval}', '--local-scheduler'])
-    subprocess.run(
-        ['python', 'main.py', 'm5-forecasting.SubmitPointwise', f'--interval={interval}', '--local-scheduler'])
+            ['python', 'main.py', 'm5-forecasting.PredictPointwise',
+             f'--prediction-start-date={variance_from_date}',
+             f'--predict-from-date={t}',
+             f'--predict-to-date={t + interval}',
+             f'--interval={interval}',
+             '--local-scheduler'])
 
     # uncertainty
-    subprocess.run(['python', 'main.py', 'm5-forecasting.MakeGroundTruth', f'--interval={interval}', '--local-scheduler'])
+    subprocess.run(
+        ['python', 'main.py', 'm5-forecasting.SubmitUncertainty',
+         f'--m5-forecasting.CalculateVariance-interval={interval}',
+         f'--m5-forecasting.CalculateVariance-variance-from-date={variance_from_date}',
+         f'--m5-forecasting.CalculateVariance-variance-to-date={variance_to_date}',
+         '--local-scheduler'])
 
 
 if __name__ == '__main__':
