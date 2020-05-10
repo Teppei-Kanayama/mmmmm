@@ -32,6 +32,7 @@ class SubmitUncertainty(gokart.TaskOnKart):
 
     @classmethod
     def _run(cls, score_v, score_p, score_b):
+        import pdb; pdb.set_trace()
         score_p_v = pd.concat([score_p, score_v])
         score = pd.concat([score_p_v, score_b[~score_b['id'].isin(score_p_v['id'])]])
         df = cls._make_submission(score)

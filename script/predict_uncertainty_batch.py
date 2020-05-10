@@ -9,15 +9,15 @@ def main():
     interval = int(sys.argv[1])
 
     # pointwise
-    subprocess.run(['python', 'main.py', 'm5-forecasting.TrainPointwiseModel', f'--train-to-date={variance_from_date}', '--local-scheduler'])
-    for t in range(variance_from_date, variance_to_date, interval):
-        subprocess.run(
-            ['python', 'main.py', 'm5-forecasting.PredictPointwise',
-             f'--prediction-start-date={variance_from_date}',
-             f'--predict-from-date={t}',
-             f'--predict-to-date={t + interval}',
-             f'--interval={interval}',
-             '--local-scheduler'])
+    # subprocess.run(['python', 'main.py', 'm5-forecasting.TrainPointwiseModel', f'--train-to-date={variance_from_date}', '--local-scheduler'])
+    # for t in range(variance_from_date, variance_to_date, interval):
+    #     subprocess.run(
+    #         ['python', 'main.py', 'm5-forecasting.PredictPointwise',
+    #          f'--prediction-start-date={variance_from_date}',
+    #          f'--predict-from-date={t}',
+    #          f'--predict-to-date={t + interval}',
+    #          f'--interval={interval}',
+    #          '--local-scheduler'])
 
     # uncertainty
     subprocess.run(
