@@ -16,7 +16,7 @@ from m5_forecasting.utils.pandas_utils import get_uncertainty_ids
 class PredictUncertaintyWithPoisson(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    mu_upper_bound: int = luigi.IntParameter(default=20)
+    mu_upper_bound: int = luigi.IntParameter(default=10)
 
     def requires(self):
         accuracy_task = LoadInputData(filename='kkiller_first_public_notebook_under050_v5.csv')
