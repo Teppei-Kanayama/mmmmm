@@ -33,7 +33,7 @@ class CalculateVariance(gokart.TaskOnKart):
 
         # TODO: DRY
         # ["id"] などをlistに統一する
-        level_list = [["_all_"], ["id"], ["item_id"], ["dept_id"], ["cat_id"], ["store_id"], ["state_id"], ["_all_"],
+        level_list = [["_all_"], ["id"], ["item_id"], ["dept_id"], ["cat_id"], ["store_id"], ["state_id"],
                       ["state_id", "item_id"], ["state_id", "dept_id"], ["store_id", "dept_id"], ["state_id", "cat_id"],
                       ["store_id", "cat_id"]]
 
@@ -53,7 +53,7 @@ class CalculateVariance(gokart.TaskOnKart):
             for lev in level:
                 variance_df = variance_df.rename(columns={f"('{lev}', '')": lev})
             variance_df['id'] = get_uncertainty_ids(variance_df, level)
-            variance_list.append(variance_df)
+            variance_list.append(variance_df[['id', 'percentile_diff']])
 
         variance = pd.concat(variance_list)
-        self.dump(variance[['id', 'percentile_diff']])
+        self.dump(variance)
