@@ -1,3 +1,5 @@
+from typing import List
+
 import gokart
 import luigi
 import pandas as pd
@@ -26,34 +28,56 @@ class CalculateVariance(gokart.TaskOnKart):
 
     def run(self):
         ground_truth = self.load_data_frame('ground_truth')
-        ground_truth["_all_"] = "Total"
-
         prediction = pd.concat(self.load('predict'))
+        output = self._run(ground_truth, prediction)
+        self.dump(output)
+
+    @classmethod
+    def _run(cls, ground_truth: pd.DataFrame, prediction: pd.DataFrame) -> pd.DataFrame:
+        ground_truth["_all_"] = "Total"
         prediction["_all_"] = "Total"
+        variance_list = [cls._calculate_variance(level, ground_truth, prediction) for level in LEVELS]
+        variance = pd.concat(variance_list)
+        return variance
 
         # TODO: DRY
         # ["id"] などをlistに統一する
-        level_list = [["_all_"], ["id"], ["item_id"], ["dept_id"], ["cat_id"], ["store_id"], ["state_id"],
-                      ["state_id", "item_id"], ["state_id", "dept_id"], ["store_id", "dept_id"], ["state_id", "cat_id"],
-                      ["store_id", "cat_id"]]
+        # level_list = [["_all_"], ["id"], ["item_id"], ["dept_id"], ["cat_id"], ["store_id"], ["state_id"],
+        #               ["state_id", "item_id"], ["state_id", "dept_id"], ["store_id", "dept_id"], ["state_id", "cat_id"],
+        #               ["store_id", "cat_id"]]
+        #
+        # variance_list = []
+        # for level in level_list:
+        #     ground_truth_agg = ground_truth.groupby(level + ['d'], as_index=False).agg({'demand': 'sum'})
+        #     prediction_agg = prediction.groupby(level + ['d'], as_index=False).agg({'demand': 'sum'})
+        #     df = pd.merge(prediction_agg, ground_truth_agg, on=level + ['d'], suffixes=['_pred', '_gt'])
+        #     df['demand_diff'] = df['demand_gt'] - df['demand_pred']
+        #     agg_df = df.groupby(level, as_index=False).agg({'demand_diff': ['mean', 'var']})
+        #     agg_df = pd.DataFrame(agg_df.to_records())
+        #     agg_df['sigma'] = np.sqrt(agg_df["('demand_diff', 'var')"])
+        #     percentile_df = pd.DataFrame(dict(percentile=PERCENTILES))
+        #     percentile_df['n_sigma'] = percentile_df['percentile'].apply(norm.ppf)
+        #     variance_df = cross_join(agg_df, percentile_df)
+        #     variance_df['percentile_diff'] = variance_df['sigma'] * variance_df['n_sigma']
+        #     for lev in level:
+        #         variance_df = variance_df.rename(columns={f"('{lev}', '')": lev})
+        #     variance_df['id'] = get_uncertainty_ids(variance_df, level)
+        #     variance_list.append(variance_df[['id', 'percentile_diff']])
 
-        variance_list = []
-        for level in level_list:
-            ground_truth_agg = ground_truth.groupby(level + ['d'], as_index=False).agg({'demand': 'sum'})
-            prediction_agg = prediction.groupby(level + ['d'], as_index=False).agg({'demand': 'sum'})
-            df = pd.merge(prediction_agg, ground_truth_agg, on=level + ['d'], suffixes=['_pred', '_gt'])
-            df['demand_diff'] = df['demand_gt'] - df['demand_pred']
-            agg_df = df.groupby(level, as_index=False).agg({'demand_diff': ['mean', 'var']})
-            agg_df = pd.DataFrame(agg_df.to_records())
-            agg_df['sigma'] = np.sqrt(agg_df["('demand_diff', 'var')"])
-            percentile_df = pd.DataFrame(dict(percentile=PERCENTILES))
-            percentile_df['n_sigma'] = percentile_df['percentile'].apply(norm.ppf)
-            variance_df = cross_join(agg_df, percentile_df)
-            variance_df['percentile_diff'] = variance_df['sigma'] * variance_df['n_sigma']
-            for lev in level:
-                variance_df = variance_df.rename(columns={f"('{lev}', '')": lev})
-            variance_df['id'] = get_uncertainty_ids(variance_df, level)
-            variance_list.append(variance_df[['id', 'percentile_diff']])
-
-        variance = pd.concat(variance_list)
-        self.dump(variance)
+    @staticmethod
+    def _calculate_variance(level: List, ground_truth: pd.DataFrame, prediction: pd.DataFrame) -> pd.DataFrame:
+        ground_truth_agg = ground_truth.groupby(level + ['d'], as_index=False).agg({'demand': 'sum'})
+        prediction_agg = prediction.groupby(level + ['d'], as_index=False).agg({'demand': 'sum'})
+        df = pd.merge(prediction_agg, ground_truth_agg, on=level + ['d'], suffixes=['_pred', '_gt'])
+        df['demand_diff'] = df['demand_gt'] - df['demand_pred']
+        agg_df = df.groupby(level, as_index=False).agg({'demand_diff': ['mean', 'var']})
+        agg_df = pd.DataFrame(agg_df.to_records())
+        agg_df['sigma'] = np.sqrt(agg_df["('demand_diff', 'var')"])
+        percentile_df = pd.DataFrame(dict(percentile=PERCENTILES))
+        percentile_df['n_sigma'] = percentile_df['percentile'].apply(norm.ppf)
+        variance_df = cross_join(agg_df, percentile_df)
+        variance_df['percentile_diff'] = variance_df['sigma'] * variance_df['n_sigma']
+        for lev in level:
+            variance_df = variance_df.rename(columns={f"('{lev}', '')": lev})
+        variance_df['id'] = get_uncertainty_ids(variance_df, level)
+        return variance_df[['id', 'percentile_diff']]

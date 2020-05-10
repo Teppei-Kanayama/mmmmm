@@ -37,6 +37,7 @@ class PredictUncertaintyWithPoisson(gokart.TaskOnKart):
             df_list.append(df)
         df_final = reduce(lambda x, y: pd.merge(x, y), df_list)
         df_final['id'] = [f"{lev.replace('_validation', '')}_{q:.3f}_validation" for lev, q in zip(df_final['id'].values, df_final['percentile'].values)]
+
         df_final = df_final.drop('percentile', axis=1)
         df_final = df_final[~df_final['id'].str.contains('0.500')]
         return df_final
