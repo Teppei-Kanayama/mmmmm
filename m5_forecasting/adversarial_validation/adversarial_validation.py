@@ -47,15 +47,19 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
 
         # prepare data
         # 6日ごとにval, testデータをサンプルする
-        validataion_days = np.concatenate([np.arange(self.source_term[0], self.source_term[1], 6), np.arange(self.target_term[0], self.target_term[1], 6)])
+        # TODO: refactor
+        validation_days = np.concatenate([np.arange(self.source_term[0], self.source_term[1], 6), np.arange(self.target_term[0], self.target_term[1], 6)])
         test_days = np.concatenate([np.arange(self.source_term[0] + 1, self.source_term[1], 6), np.arange(self.target_term[0] + 1, self.target_term[1], 6)])
 
-        X_val = data[data['d'].isin(validataion_days)][feature_columns].values
+        X_val = data[data['d'].isin(validation_days)][feature_columns].values
         X_test = data[data['d'].isin(test_days)][feature_columns].values
-        X_train = data[~(data['d'].isin(validataion_days) | data['d'].isin(test_days))][feature_columns].values
-        y_val = data[data['d'].isin(validataion_days)]['target'].values
+        X_train = data[~(data['d'].isin(validation_days) | data['d'].isin(test_days))][feature_columns].values
+
+        y_val = data[data['d'].isin(validation_days)]['target'].values
         y_test = data[data['d'].isin(test_days)]['target'].values
-        y_train = data[~(data['d'].isin(validataion_days) | data['d'].isin(test_days))]['target'].values
+        y_train = data[~(data['d'].isin(validation_days) | data['d'].isin(test_days))]['target'].values
+
+        test_ids = data[data['d'].isin(test_days)]['id']
 
         train_set = lgb.Dataset(X_train, y_train)
         val_set = lgb.Dataset(X_val, y_val)
@@ -75,7 +79,7 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
         self.dump(model, 'model')
         self.dump(feature_columns, 'feature_columns')
         self.dump(feature_importance, 'feature_importance')
-        self.dump(dict(X_test=X_test, y_test=y_test), 'test_data')
+        self.dump(dict(X_test=X_test, y_test=y_test, test_ids=test_ids), 'test_data')
 
 
 class AdversarialValidation(gokart.TaskOnKart):
@@ -106,9 +110,16 @@ class AdversarialValidation(gokart.TaskOnKart):
         for model, test_data, source_term in zip(model_list, test_data_list, self.source_term_list):
             y_hat_test = model.predict(test_data['X_test'])
             y_test = test_data['y_test']
-            fpr, tpr, thresholds = metrics.roc_curve(y_test, y_hat_test)
-            score = metrics.auc(fpr, tpr)
-            score_list.append(dict(start=source_term[0], end=source_term[1], score=score))
+            df = pd.DataFrame(dict(id=test_data['test_ids'], y_hat=y_hat_test, y=y_test))
+
+            for target_id in df['id'].unique():
+                target_df = df[df['id'] == target_id]
+                target_y_hat = target_df['y_hat']
+                target_y = target_df['y']
+                fpr, tpr, thresholds = metrics.roc_curve(target_y, target_y_hat)
+                score = metrics.auc(fpr, tpr)
+                score_list.append(dict(start=source_term[0], end=source_term[1], id=target_id, score=score))
+
         score_df = pd.DataFrame(score_list)
         self.dump(score_df)
 
