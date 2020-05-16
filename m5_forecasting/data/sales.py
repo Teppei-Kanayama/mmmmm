@@ -90,12 +90,12 @@ class MekeSalesFeature(gokart.TaskOnKart):
                 # to_float32.append(column)
 
         # longer rolling mean
-        # df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
-        # df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
-        # df['rolling_mean_t180'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(180).mean())
-        # to_float32.append('rolling_mean_t60')
-        # to_float32.append('rolling_mean_t90')
-        # to_float32.append('rolling_mean_t180')
+        df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
+        df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
+        df['rolling_mean_t180'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(180).mean())
+        to_float32.append('rolling_mean_t60')
+        to_float32.append('rolling_mean_t90')
+        to_float32.append('rolling_mean_t180')
 
         # TODO: shorter lag? NOT good so far.
         # df['rolling_mean_lag1_win13'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(1).rolling(13).mean())
