@@ -131,6 +131,7 @@ class AdversarialValidation(gokart.TaskOnKart):
 class FilterByAdversarialValidation(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
+    threshold = luigi.IntParameter(default=0.54)
     feature_task = gokart.TaskInstanceParameter()
     is_small: bool = luigi.BoolParameter()
 
@@ -141,7 +142,7 @@ class FilterByAdversarialValidation(gokart.TaskOnKart):
         features = self.load_data_frame('feature')
         adversarial_validation = self.load_data_frame('adversarial_validation')
 
-        high_score_stores = adversarial_validation[adversarial_validation['score'] > 0.54]
+        high_score_stores = adversarial_validation[adversarial_validation['score'] > self.threshold]
 
         for start, end, store in high_score_stores[['start', 'end', 'id']].values:
             features = features[~(features['d'].between(start, end) & features['id'].str.contains(store))]
