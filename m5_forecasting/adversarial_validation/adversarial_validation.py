@@ -48,8 +48,8 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
         # prepare data
         # 6日ごとにval, testデータをサンプルする
         # TODO: refactor
-        validation_days = np.concatenate([np.arange(self.source_term[0], self.source_term[1], 6), np.arange(self.target_term[0], self.target_term[1], 6)])
-        test_days = np.concatenate([np.arange(self.source_term[0] + 1, self.source_term[1], 6), np.arange(self.target_term[0] + 1, self.target_term[1], 6)])
+        validation_days = np.concatenate([np.arange(self.source_term[0], self.source_term[1], self.test_frequency), np.arange(self.target_term[0], self.target_term[1], 6)])
+        test_days = np.concatenate([np.arange(self.source_term[0] + 1, self.source_term[1], self.test_frequency), np.arange(self.target_term[0] + 1, self.target_term[1], 6)])
 
         X_val = data[data['d'].isin(validation_days)][feature_columns].values
         X_test = data[data['d'].isin(test_days)][feature_columns].values
@@ -67,7 +67,7 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
 
         # TODO: change parameters!
         params = {"objective": "binary", "metric": "auc", "learning_rate": 0.075, "max_depth": 5, "colsample_bytree": 1.0,
-                  "subsample": 0.9,  "lambda_l2": 1,  "min_child_weight": 1, 'verbosity': 1, "num_leaves": 30}
+                  "subsample": 0.9,  "lambda_l2": 1,  "min_child_weight": 1, 'verbosity': 1, "num_leaves": 10}
         num_boost_round = 1000
         early_stopping_rounds = 100
 
@@ -99,10 +99,12 @@ class AdversarialValidation(gokart.TaskOnKart):
                                      selling_price_data_task=selling_price_data_task, sales_data_task=sales_data_task)
         feature_task = MakeFeature(merged_data_task=merged_data_task)
         train_tasks = [TrainBinaryLGBM(feature_task=feature_task, source_term=source_term) for source_term in self.source_term_list]
-        return train_tasks
+        return dict(train=train_tasks, sales=sales_data_task)
 
     def run(self):
-        data = self.load()
+        data = self.load('train')
+        sales = self.load_data_frame('sales')
+
         model_list = [d['model'] for d in data]
         test_data_list = [d['test_data'] for d in data]
 
@@ -112,13 +114,17 @@ class AdversarialValidation(gokart.TaskOnKart):
             y_test = test_data['y_test']
             df = pd.DataFrame(dict(id=test_data['test_ids'], y_hat=y_hat_test, y=y_test))
 
-            for target_id in df['id'].unique():
-                target_df = df[df['id'] == target_id]
+            # for i, target_id in enumerate(df['id'].unique()):
+            for i, store_id in enumerate(sales['store_id'].unique()):
+                print(source_term, i)
+                # target_df = df[df['id'] == target_id]
+                target_df = df[df['id'].str.contains(store_id)]
                 target_y_hat = target_df['y_hat']
                 target_y = target_df['y']
                 fpr, tpr, thresholds = metrics.roc_curve(target_y, target_y_hat)
                 score = metrics.auc(fpr, tpr)
-                score_list.append(dict(start=source_term[0], end=source_term[1], id=target_id, score=score))
+                # score_list.append(dict(start=source_term[0], end=source_term[1], id=target_id, score=score))
+                score_list.append(dict(start=source_term[0], end=source_term[1], id=store_id, score=score))
 
         score_df = pd.DataFrame(score_list)
         self.dump(score_df)
