@@ -66,8 +66,8 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
         valid_sets = [train_set, val_set]
 
         # TODO: change parameters!
-        params = {"objective": "binary", "metric": "auc", "force_row_wise": True, "learning_rate": 0.075, "sub_row": 0.75,
-                  "bagging_freq": 1, "lambda_l2": 0.1, 'verbosity': 1}
+        params = {"objective": "binary", "metric": "auc", "learning_rate": 0.075, "max_depth": 5, "colsample_bytree": 1.0,
+                  "subsample": 0.9,  "lambda_l2": 1,  "min_child_weight": 1, 'verbosity': 1, "num_leaves": 30}
         num_boost_round = 1000
         early_stopping_rounds = 100
 
