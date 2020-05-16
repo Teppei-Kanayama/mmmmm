@@ -3,12 +3,14 @@ from typing import Tuple, List
 import gokart
 import luigi
 import pandas as pd
+import numpy as np
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 
 from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
+from m5_forecasting.data.load import LoadInputData
 from m5_forecasting.data.sales import PreprocessSales
 from m5_forecasting.data.selling_price import PreprocessSellingPrice
 
@@ -19,6 +21,7 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
     feature_task = gokart.TaskInstanceParameter()
     target_term: Tuple = luigi.ListParameter(default=[1914 - 365, 1914 - 1])
     source_term: Tuple = luigi.ListParameter()
+    test_frequency: int = luigi.IntParameter(default=6)
 
     def output(self):
         model = self.make_target(relative_file_path='adversarial_validation/lgb.pkl')
@@ -33,7 +36,7 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
     def run(self):
         feature = self.load_data_frame()
         feature_columns = [feature_column for feature_column in feature.columns if
-                           feature_column not in ['id', 'd', 'year', 'week_of_year', 'day']]
+                           feature_column not in ['id', 'd', 'year', 'week_of_year', 'day', 'sell_price']]  # sell_price?
 
         # target column
         target_feature = feature[feature['d'].between(*self.target_term)]
@@ -43,10 +46,17 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
         data = pd.concat([target_feature, source_feature])
 
         # prepare data
-        X = data[feature_columns].values
-        y = data['target'].values
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=42)
+        # 6日ごとにval, testデータをサンプルする
+        validataion_days = np.concatenate([np.arange(self.source_term[0], self.source_term[1], 6), np.arange(self.target_term[0], self.target_term[1], 6)])
+        test_days = np.concatenate([np.arange(self.source_term[0] + 1, self.source_term[1], 6), np.arange(self.target_term[0] + 1, self.target_term[1], 6)])
+
+        X_val = data[data['d'].isin(validataion_days)][feature_columns].values
+        X_test = data[data['d'].isin(test_days)][feature_columns].values
+        X_train = data[~(data['d'].isin(validataion_days) | data['d'].isin(test_days))][feature_columns].values
+        y_val = data[data['d'].isin(validataion_days)]['target'].values
+        y_test = data[data['d'].isin(test_days)]['target'].values
+        y_train = data[~(data['d'].isin(validataion_days) | data['d'].isin(test_days))]['target'].values
+
         train_set = lgb.Dataset(X_train, y_train)
         val_set = lgb.Dataset(X_val, y_val)
         valid_sets = [train_set, val_set]
@@ -79,8 +89,8 @@ class AdversarialValidation(gokart.TaskOnKart):
 
     def requires(self):
         calendar_data_task = PreprocessCalendar()
-        selling_price_data_task = PreprocessSellingPrice()
-        sales_data_task = PreprocessSales(is_small=self.is_small)
+        selling_price_data_task = LoadInputData(filename='sell_prices.csv')  # 特徴量計算後は PreprocessSellingPrice
+        sales_data_task = PreprocessSales(is_small=self.is_small)  # 特徴量計算後は MekeSalesFeature
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task, sales_data_task=sales_data_task)
         feature_task = MakeFeature(merged_data_task=merged_data_task)
