@@ -68,19 +68,17 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
         to_float32 = []
 
-        df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
-        df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
-        df['rolling_mean_t180'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(180).mean())
-        to_float32.append('rolling_mean_t60')
-        to_float32.append('rolling_mean_t90')
-        to_float32.append('rolling_mean_t180')
-
-        lags = [7, 14, 21, 28, 35]  # TODO: more types of lags?
-        wins = [7, 28]
+        # lag
+        lags = [i for i in range(28, 28+15)]
         for lag in lags:
             column = f'lag{lag}'
             df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag))
             to_float32.append(column)
+
+        # rolling mean
+        lags = [7, 14]
+        wins = [7, 14, 30, 60]
+        for lag in lags:
             for win in wins:
                 column = f'rolling_mean_lag{lag}_win{win}'
                 df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).mean())
@@ -91,13 +89,22 @@ class MekeSalesFeature(gokart.TaskOnKart):
                 # df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).std())
                 # to_float32.append(column)
 
+        # longer rolling mean
+        # df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
+        # df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
+        # df['rolling_mean_t180'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(180).mean())
+        # to_float32.append('rolling_mean_t60')
+        # to_float32.append('rolling_mean_t90')
+        # to_float32.append('rolling_mean_t180')
+
         # TODO: shorter lag? NOT good so far.
         # df['rolling_mean_lag1_win13'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(1).rolling(13).mean())
         # to_float32.append('rolling_mean_lag1_win13')
 
         df[to_float32] = df[to_float32].astype("float32")
 
-        wins = [60, 120]
+        # sold out
+        wins = [60]
         for win in wins:
             df['rolling_sum_backward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum())
             df['rolling_sum_forward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum().shift(1 - win))
