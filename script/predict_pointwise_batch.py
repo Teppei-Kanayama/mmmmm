@@ -17,6 +17,3 @@ if __name__ == '__main__':
 
 # DATA_SIZE=small python script/predict_pointwise_batch.py 7
 # python script/predict_pointwise_batch.py 1
-
-# DATA_SIZE=small python script/predict_pointwise_batch.py 7
-

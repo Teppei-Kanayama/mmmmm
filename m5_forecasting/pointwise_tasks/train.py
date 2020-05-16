@@ -4,6 +4,7 @@ import gokart
 import luigi
 import pandas as pd
 
+from m5_forecasting.adversarial_validation.adversarial_validation import FilterByAdversarialValidation
 from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
 from m5_forecasting.data.sales import PreprocessSales, MekeSalesFeature
@@ -36,7 +37,7 @@ class TrainPointwiseModel(gokart.TaskOnKart):
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_data_task)
-        feature_task = MakeFeature(merged_data_task=merged_data_task)
+        feature_task = FilterByAdversarialValidation(feature_task=MakeFeature(merged_data_task=merged_data_task), is_small=self.is_small)
         model_task = TrainPointwiseLGBM(feature_task=TrainValidationSplit(data_task=feature_task, train_to_date=self.train_to_date))
         return model_task
 

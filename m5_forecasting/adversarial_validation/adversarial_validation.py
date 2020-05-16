@@ -5,14 +5,12 @@ import luigi
 import pandas as pd
 import numpy as np
 from sklearn import metrics
-from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 
 from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
 from m5_forecasting.data.load import LoadInputData
 from m5_forecasting.data.sales import PreprocessSales
-from m5_forecasting.data.selling_price import PreprocessSellingPrice
 
 
 class TrainBinaryLGBM(gokart.TaskOnKart):
@@ -128,6 +126,27 @@ class AdversarialValidation(gokart.TaskOnKart):
 
         score_df = pd.DataFrame(score_list)
         self.dump(score_df)
+
+
+class FilterByAdversarialValidation(gokart.TaskOnKart):
+    task_namespace = 'm5-forecasting'
+
+    feature_task = gokart.TaskInstanceParameter()
+    is_small: bool = luigi.BoolParameter()
+
+    def requires(self):
+        return dict(feature=self.feature_task, adversarial_validation=AdversarialValidation(is_small=self.is_small))
+
+    def run(self):
+        features = self.load_data_frame('feature')
+        adversarial_validation = self.load_data_frame('adversarial_validation')
+
+        high_score_stores = adversarial_validation[adversarial_validation['score'] > 0.54]
+
+        for start, end, store in high_score_stores[['start', 'end', 'id']].values:
+            features = features[~(features['d'].between(start, end) & features['id'].str.contains(store))]
+
+        self.dump(features)
 
 
 # DATA_SIZE=small python main.py m5-forecasting.AdversarialValidation --local-scheduler
