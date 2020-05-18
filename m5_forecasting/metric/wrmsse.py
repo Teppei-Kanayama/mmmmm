@@ -58,18 +58,10 @@ def main():
     file_pass = 'resources/input/'
 
     # sample submission
-    ss = pd.read_csv(file_pass + 'sample_submission_accuracy.csv')
+    ss = pd.read_csv(file_pass + 'sample_submission.csv')
 
     # sales
     sales = pd.read_csv(file_pass + 'sales_train_validation.csv')
-
-    # Predictions:
-    sub = pd.read_csv(file_pass + 'emsembled.csv')
-    sub = sub[sub.id.str.endswith('validation')]
-
-    # Psudo Ground truth:
-    ground_truth = pd.read_csv('resources/kernel/kkiller_first_public_notebook_under050_v5.csv')
-    ground_truth = ground_truth[ground_truth.id.str.endswith('validation')]
 
     # Load weight and roll up matrix
     weight = pd.read_csv(file_pass + 'weights_validation.csv')
@@ -79,12 +71,20 @@ def main():
 
     calculator = WRMSSECalculator(weight=weight, roll_mat_csr=roll_mat_csr, sample_submission=ss, sales=sales)
 
+    # Predictions:
+    sub = pd.read_csv(file_pass + 'emsembled.csv')
+    sub = sub[sub.id.str.endswith('validation')]
+
+    # Psudo Ground truth:
+    ground_truth = pd.read_csv('resources/kernel/kkiller_first_public_notebook_under050_v5.csv')
+    ground_truth = ground_truth[ground_truth.id.str.endswith('validation')]
+
     score, score_df = calculator.calculate_scores(sub, ground_truth)
 
     print(score)  # 0.196
     print(score_df)
 
-    import pdb; pdb.set_trace()
+
 
 
 if __name__ == '__main__':

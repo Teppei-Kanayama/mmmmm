@@ -47,9 +47,9 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
                       'metric': 'rmse',  # 固定。なんでもいい
                       'subsample': 0.5,  # TODO: 重要, bagging_fractionと同じ。
                       'subsample_freq': 1,  # TODO: CVで決める bagging_freqと同じ。
-                      'learning_rate': 0.1,  # Kernelでは0.03だったが、最初は0.1とかでいいか。あとで小さくする。
+                      'learning_rate': 0.1,  # あとで小さくする。
                       'num_leaves': 2 ** 11 - 1,  # TODO: 超重要
-                      'min_data_in_leaf': 2 ** 12 - 1,  # TODO: 重要
+                      # 'min_data_in_leaf': 2 ** 12 - 1,  # TODO: 重要
                       'feature_fraction': 0.5,  # TODO: 重要
                       'max_bin': 100,
                       'n_estimators': 1400,
