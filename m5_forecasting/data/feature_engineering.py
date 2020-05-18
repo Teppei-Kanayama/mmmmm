@@ -6,6 +6,7 @@ import luigi
 from sklearn.preprocessing import OrdinalEncoder
 from tqdm import tqdm
 
+
 logger = getLogger(__name__)
 
 
