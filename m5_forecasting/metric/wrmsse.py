@@ -1,29 +1,34 @@
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 
 
 class WRMSSECalculator:
-    def __init__(self, s, w, sw, roll_mat_csr) -> None:
+    def __init__(self, s: np.ndarray, w: np.ndarray, sw: np.ndarray, roll_mat_csr: csr_matrix) -> None:
         self._s = s
         self._w = w
         self._sw = sw,
         self._roll_mat_csr = roll_mat_csr
 
-    def calculate_scores(self, y_hat, y_gt):
+    def calculate_scores(self, y_hat: pd.DataFrame, y_gt: pd.DataFrame) -> float:
+        # y_hat, y_gt: ID数x日数のDataFrame
+        # y_hat.shape == y_gt.shape == (30490, 28)
+        # IDの順序はsumple submissionと同じである必要あり
         return np.sum(
             np.sqrt(
                 np.mean(
                     np.square(self._rollup(y_hat.values - y_gt.values))
                     , axis=1)) * self._sw) / 12
 
-    def calculate_scores_with_matrix(self, y_hat, y_gt):
+    def calculate_scores_with_matrix(self, y_hat: pd.DataFrame, y_gt: pd.DataFrame) -> Tuple[float, np.ndarray]:
         score_matrix = (np.square(self._rollup(y_hat.values - y_gt.values)) * np.square(self._w)[:, None]) / self._s[:, None]
-        score = np.sum(np.sqrt(np.mean(score_matrix, axis=1))) / 12  # <-used to be mistake here
+        score = np.sum(np.sqrt(np.mean(score_matrix, axis=1))) / 12
         return score, score_matrix
 
-    # Function to do quick rollups:
-    def _rollup(self, v):
+    def _rollup(self, v: np.ndarray) -> np.ndarray:
+        # 複数階層でのgroupbyを行列一発で解決する
         # v - np.array of size (30490 rows, n day columns)
         # v_rolledup - array of size (n, 42840)
         return self._roll_mat_csr * v  # (v.T*roll_mat_csr.T).T
@@ -40,7 +45,6 @@ def main():
 
     # Load roll up matrix to calcualte aggreagates:
     roll_mat_df = pd.read_pickle(file_pass + 'roll_mat_df.pkl')
-    roll_index = roll_mat_df.index
     roll_mat_csr = csr_matrix(roll_mat_df.values)
     del roll_mat_df
 
