@@ -15,14 +15,15 @@ class WRMSSECalculator:
         self._w_df = weight
         self._sw = self._w/np.sqrt(self._s)
 
-    def calculate_scores(self, y_hat: pd.DataFrame, y_gt: pd.DataFrame) -> Tuple[float, np.ndarray]:
+    def calculate_scores(self, y_hat: pd.DataFrame, y_gt: pd.DataFrame) -> Tuple[float, pd.DataFrame]:
         y_hat = self._sort_id(y_hat)
         y_gt = self._sort_id(y_gt)
         score_matrix = (np.square(self._rollup(y_hat.values - y_gt.values)) * np.square(self._w)[:, None]) / self._s[:, None]
-        import pdb; pdb.set_trace()
-
+        score_df = pd.DataFrame(score_matrix, columns=[f'V{i+1}' for i in range(score_matrix.shape[1])])
+        score_df = pd.concat([self._w_df.drop('Weight', axis=1), score_df], axis=1)
+        score_df['SW'] = self._sw
         score = np.sum(np.sqrt(np.mean(score_matrix, axis=1))) / 12
-        return score, score_matrix
+        return score, score_df
 
     # Fucntion to calculate S weights:
     def _get_s(self, drop_days=0):
@@ -78,10 +79,10 @@ def main():
 
     calculator = WRMSSECalculator(weight=weight, roll_mat_csr=roll_mat_csr, sample_submission=ss, sales=sales)
 
-    score, mat = calculator.calculate_scores(sub, ground_truth)
+    score, score_df = calculator.calculate_scores(sub, ground_truth)
 
     print(score)  # 0.196
-    print(mat)
+    print(score_df)
 
     import pdb; pdb.set_trace()
 
