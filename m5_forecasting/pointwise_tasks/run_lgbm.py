@@ -40,24 +40,13 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
         print(f'feature columns: {feature_columns}')
         train_set = lgb.Dataset(data['x_train'][feature_columns], data['y_train'])
         val_set = lgb.Dataset(data['x_val'][feature_columns], data['y_val'])
-        # params = {'boosting_type': 'gbdt', 'metric': 'rmse', 'objective': 'poisson', 'n_jobs': -1, 'seed': 20,
-        #           'learning_rate': 0.075, 'bagging_fraction': 0.66, 'bagging_freq': 1, 'colsample_bytree': 0.77,
-        #           'num_leaves': 63, 'lambda_l2': 0.1}
-
-        # TODO: get best parameters using optuna.
-        # params = {"objective": "poisson", "metric": "rmse", "force_row_wise": True, "learning_rate": 0.075,
-        #           "sub_row": 0.75, "bagging_freq": 1, "lambda_l2": 0.1,
-        #           'verbosity': 1, 'num_iterations': num_boost_round, 'num_leaves': 128}
-
-        params = {"objective": "poisson", "metric": "rmse", "force_row_wise": True, "learning_rate": 0.075,
-                  "sub_row": 0.75, "bagging_freq": 1, "lambda_l2": 0.1, 'verbosity': 1}
 
         lgb_params = {'boosting_type': 'gbdt',   # 固定
-                      'objective': 'tweedie',   # TODO: これを試してみよう
+                      'objective': 'tweedie',
                       'tweedie_variance_power': 1.1,   # TODO: CVで決める
                       'metric': 'rmse',  # 固定。なんでもいい
                       'subsample': 0.5,  # TODO: 重要, bagging_fractionと同じ。
-                      'subsample_freq': 1,  # bagging_freqと同じ。
+                      'subsample_freq': 1,  # TODO: CVで決める bagging_freqと同じ。
                       'learning_rate': 0.1,  # Kernelでは0.03だったが、最初は0.1とかでいいか。あとで小さくする。
                       'num_leaves': 2 ** 11 - 1,  # TODO: 超重要
                       'min_data_in_leaf': 2 ** 12 - 1,  # TODO: 重要
@@ -65,11 +54,10 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
                       'max_bin': 100,
                       'n_estimators': 1400,
                       'boost_from_average': False,
-                      'verbose': -1,
                       }
 
         valid_sets = [train_set, val_set] if not data['x_val'].empty else None
-        model = lgb.train(params, train_set, num_boost_round=num_boost_round, early_stopping_rounds=early_stopping_rounds,
+        model = lgb.train(lgb_params, train_set, num_boost_round=num_boost_round, early_stopping_rounds=early_stopping_rounds,
                           valid_sets=valid_sets, verbose_eval=100)
 
         feature_importance = pd.DataFrame(
