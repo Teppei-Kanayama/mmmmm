@@ -69,7 +69,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
         to_float32 = []
 
         # lag
-        lags = [i for i in range(28, 28+15)]
+        lags = [28, 60]
         for lag in lags:
             column = f'lag{lag}'
             df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag))
@@ -77,7 +77,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
         # rolling mean
         lags = [7, 14]
-        wins = [7, 14, 30, 60]
+        wins = [7, 60]
         for lag in lags:
             for win in wins:
                 column = f'rolling_mean_lag{lag}_win{win}'

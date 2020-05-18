@@ -49,10 +49,10 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
                       'subsample_freq': 1,  # TODO: CVで決める bagging_freqと同じ。
                       'learning_rate': 0.1,  # あとで小さくする。
                       'num_leaves': 2 ** 11 - 1,  # TODO: 超重要
-                      # 'min_data_in_leaf': 2 ** 12 - 1,  # TODO: 重要
+                      'min_data_in_leaf': 2 ** 12 - 1,  # TODO: 重要  # これがあるとsmallで動かなくなる
                       'feature_fraction': 0.5,  # TODO: 重要
                       'max_bin': 100,
-                      'n_estimators': 1400,
+                      'n_estimators': 1400,  # TODO: CVで決める。何回で学習をやめるか？ early stoppingを使わない場合はこれが重要になる。
                       'boost_from_average': False,
                       }
 
