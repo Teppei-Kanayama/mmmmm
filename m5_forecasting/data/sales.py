@@ -110,16 +110,18 @@ class MekeSalesFeature(gokart.TaskOnKart):
         return df
 
     @staticmethod
-    def _calculate_lag(df: pd.DataFrame, lag: int) -> pd.Series:
-        return df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag))
+    def _calculate_lag(df: pd.DataFrame, lag: int, target_column: str = 'demand') -> pd.Series:
+        return df.groupby(['id'])[target_column].transform(lambda x: x.shift(lag))
 
     @staticmethod
     def _calculate_rolling_mean(df: pd.DataFrame, lag: int, win: int) -> pd.Series:
         return df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).mean())
 
-    @staticmethod
-    def _calculate_grouped_lag(df: pd.DataFrame, level: str, lag: int) -> pd.Series:
-        import pdb; pdb.set_trace()
+    @classmethod
+    def _calculate_grouped_lag(cls, df: pd.DataFrame, level: str, lag: int) -> pd.Series:
+        df_copy = df.copy()
+        df_copy['grouped_demand'] = df_copy.groupby(['d', level])['demand'].transform('sum')
+        return cls._calculate_lag(df_copy, lag, target_column='grouped_demand')
 
     @staticmethod
     def _calculate_sold_out(df: pd.DataFrame, win: int) -> pd.Series:
