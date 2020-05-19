@@ -38,17 +38,26 @@ class ValidatePointwise(gokart.TaskOnKart):
         sales = self.load_data_frame('sales')
         rmsse_weight = self.load_data_frame('rmsse_weight')
         roll_matrix = pd.read_pickle('resources/input/roll_mat_df.pkl')
-        output = self._run(ground_truth, prediction, sample_submission, sales, rmsse_weight, roll_matrix)
+        output = self._run(ground_truth, prediction, sample_submission, sales, rmsse_weight, roll_matrix,
+                           self.validate_from_date, self.validate_to_date)
         self.dump(output)
 
     @classmethod
-    def _run(cls, ground_truth: pd.DataFrame, prediction: pd.DataFrame, sample_submission, sales, rmsse_weight, roll_matrix):
+    def _run(cls, ground_truth: pd.DataFrame, prediction: pd.DataFrame, sample_submission, sales, rmsse_weight, roll_matrix,
+             validate_from_date: int, validate_to_date: int) -> pd.DataFrame:
+        ground_truth = ground_truth[ground_truth['d'].between(validate_from_date, validate_to_date - 1)]
+        pivot_prediction = cls._make_pivot(prediction)
+        pivot_ground_truth = cls._make_pivot(ground_truth)
         roll_mat_csr = csr_matrix(roll_matrix.values)
         calculator = WRMSSECalculator(weight=rmsse_weight, roll_mat_csr=roll_mat_csr, sample_submission=sample_submission, sales=sales)
-        score, score_df = calculator.calculate_scores(prediction, ground_truth)
+        score, score_df = calculator.calculate_scores(pivot_prediction, pivot_ground_truth)
         print(score)
         return score_df
 
+    @staticmethod
+    def _make_pivot(df: pd.DataFrame) -> pd.DataFrame:
+        df = df.assign(id=df['id'] + "_" + "validation", V="V" + df['d'].astype(str))
+        return df.pivot(index="id", columns="V", values="demand").reset_index()
 
 
  # python main.py m5-forecasting.SubmitUncertainty --local-scheduler
