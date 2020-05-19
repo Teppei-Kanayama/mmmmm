@@ -3,7 +3,30 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from m5_forecasting.data.sales import PreprocessSales
+from m5_forecasting.data.sales import PreprocessSales, MekeSalesFeature
+
+
+class TestMekeSalesFeature(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.sales = pd.DataFrame(
+            [dict(id='id1', item_id='item1', d=1, demand=1),
+             dict(id='id2', item_id='item1', d=1, demand=0),
+             dict(id='id3', item_id='item1', d=1, demand=0),
+             dict(id='id4', item_id='item2', d=1, demand=4),
+             dict(id='id1', item_id='item1', d=2, demand=1),
+             dict(id='id2', item_id='item1', d=2, demand=2),
+             dict(id='id3', item_id='item1', d=2, demand=3),
+             dict(id='id4', item_id='item2', d=2, demand=4),
+             dict(id='id1', item_id='item1', d=3, demand=0),
+             dict(id='id2', item_id='item1', d=3, demand=0),
+             dict(id='id3', item_id='item1', d=3, demand=0),
+             dict(id='id4', item_id='item2', d=3, demand=3)]
+            )
+
+    def test_calculate_grouped_lag(self):
+        actual = MekeSalesFeature._calculate_grouped_lag(self.sales, level='item_id', lag=2)
+        expected = pd.Series([1, 2, 3])
 
 
 class TestPreprocessSalse(unittest.TestCase):

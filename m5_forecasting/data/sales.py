@@ -67,8 +67,15 @@ class MekeSalesFeature(gokart.TaskOnKart):
         if from_date and to_date:
             df = df[(from_date - buffer <= df['d']) & (df['d'] < to_date)]
 
+        # grouped lag
+        lags = [7, 14]
+        levels = ['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id']
+        for lag in lags:
+            for level in levels:
+                df[f'grouped_lag_{level}_lag{lag}'] = cls._calculate_grouped_lag(df, level, lag)
+
         # lag
-        lags = [28, 60]
+        lags = [28]
         for lag in lags:
             df[f'lag{lag}'] = cls._calculate_lag(df, lag)
 
@@ -109,6 +116,10 @@ class MekeSalesFeature(gokart.TaskOnKart):
     @staticmethod
     def _calculate_rolling_mean(df: pd.DataFrame, lag: int, win: int) -> pd.Series:
         return df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).mean())
+
+    @staticmethod
+    def _calculate_grouped_lag(df: pd.DataFrame, level: str, lag: int) -> pd.Series:
+        import pdb; pdb.set_trace()
 
     @staticmethod
     def _calculate_sold_out(df: pd.DataFrame, win: int) -> pd.Series:
