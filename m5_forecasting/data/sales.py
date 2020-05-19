@@ -119,13 +119,13 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
     @classmethod
     def _calculate_grouped_lag(cls, df: pd.DataFrame, level: str, lag: int) -> pd.Series:
-        df_copy = df.copy()
-        df_copy['grouped_demand'] = df_copy.groupby(['d', level])['demand'].transform('sum')
-        return cls._calculate_lag(df_copy, lag, target_column='grouped_demand')
+        df = df.copy()
+        df['grouped_demand'] = df.groupby(['d', level])['demand'].transform('sum')
+        return cls._calculate_lag(df, lag, target_column='grouped_demand')
 
     @staticmethod
     def _calculate_sold_out(df: pd.DataFrame, win: int) -> pd.Series:
-        df_copy = df.copy()
-        df_copy['rolling_sum_backward'] = df_copy.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum())
-        df_copy['rolling_sum_forward'] = df_copy.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum().shift(1 - win))
-        return ((df_copy['rolling_sum_backward'] == 0) | (df_copy['rolling_sum_forward'] == 0)).astype(int)
+        df = df.copy()
+        df['rolling_sum_backward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum())
+        df['rolling_sum_forward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum().shift(1 - win))
+        return ((df['rolling_sum_backward'] == 0) | (df['rolling_sum_forward'] == 0)).astype(int)
