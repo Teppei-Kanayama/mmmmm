@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 import gokart
 import luigi
@@ -35,12 +35,13 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
         self.dump(feature_importance, 'feature_importance')
 
     @staticmethod
-    def _run(data: pd.DataFrame, num_boost_round: int, early_stopping_rounds: int) -> Tuple[Booster, List[str], pd.DataFrame]:
+    def _run(data: Dict[str, pd.DataFrame], num_boost_round: int, early_stopping_rounds: int) -> Tuple[Booster, List[str], pd.DataFrame]:
         feature_columns = [feature for feature in data['x_train'].columns if feature not in ['id', 'd']]
         print(f'feature columns: {feature_columns}')
         train_set = lgb.Dataset(data['x_train'][feature_columns], data['y_train'])
         val_set = lgb.Dataset(data['x_val'][feature_columns], data['y_val'])
 
+        min_data_in_leaf = 2 ** 12 - 1 if data['x_train']['id'].nunique() > 10 else None
         lgb_params = {'boosting_type': 'gbdt',   # 固定
                       'objective': 'tweedie',
                       'tweedie_variance_power': 1.1,   # TODO: CVで決める
@@ -49,7 +50,7 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
                       'subsample_freq': 1,  # TODO: CVで決める bagging_freqと同じ。
                       'learning_rate': 0.1,  # あとで小さくする。
                       'num_leaves': 128,  # TODO: 超重要  # もともとは 2 ** 11 - 1 だったが2~3時間経っても終わらない
-                      'min_data_in_leaf': 2 ** 12 - 1,  # TODO: 重要  # これがあるとsmallで動かなくなる
+                      'min_data_in_leaf': min_data_in_leaf,  # TODO: 重要
                       'feature_fraction': 0.5,  # TODO: 重要
                       'max_bin': 100,
                       'n_estimators': 1400,  # TODO: CVで決める。何回で学習をやめるか？ early stoppingを使わない場合はこれが重要になる。
