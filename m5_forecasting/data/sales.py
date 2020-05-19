@@ -60,57 +60,59 @@ class MekeSalesFeature(gokart.TaskOnKart):
         output = self._run(sales, self.from_date, self.to_date)
         self.dump(output)
 
-    @staticmethod
-    def _run(df, from_date, to_date):
+    @classmethod
+    def _run(cls, df, from_date, to_date):
+        original_columns = df.columns
         buffer = 28 + 180  # TODO: decide buffer automatically
         if from_date and to_date:
             df = df[(from_date - buffer <= df['d']) & (df['d'] < to_date)]
 
-        to_float32 = []
-
         # lag
         lags = [28, 60]
         for lag in lags:
-            column = f'lag{lag}'
-            df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag))
-            to_float32.append(column)
+            df[f'lag{lag}'] = cls._calculate_lag(df, lag)
 
         # rolling mean
         lags = [7, 14]
         wins = [7, 60]
         for lag in lags:
             for win in wins:
-                column = f'rolling_mean_lag{lag}_win{win}'
-                df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).mean())
-                to_float32.append(column)
+                df[f'rolling_mean_lag{lag}_win{win}'] = cls._calculate_rolling_mean(df, lag, win)
 
                 # TODO: std? It is useless so far.
-                # column = f'rolling_std_lag{lag}_win{win}'
-                # df[column] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).std())
-                # to_float32.append(column)
+                # df[f'rolling_std_lag{lag}_win{win}'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).std())
 
         # longer rolling mean
-        df['rolling_mean_t60'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(60).mean())
-        df['rolling_mean_t90'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(90).mean())
-        df['rolling_mean_t180'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(28).rolling(180).mean())
-        to_float32.append('rolling_mean_t60')
-        to_float32.append('rolling_mean_t90')
-        to_float32.append('rolling_mean_t180')
+        df['rolling_mean_t60'] = cls._calculate_rolling_mean(df, 28, 60)
+        df['rolling_mean_t90'] = cls._calculate_rolling_mean(df, 28, 90)
+        df['rolling_mean_t180'] = cls._calculate_rolling_mean(df, 28, 180)
 
         # TODO: shorter lag? NOT good so far.
         # df['rolling_mean_lag1_win13'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(1).rolling(13).mean())
-        # to_float32.append('rolling_mean_lag1_win13')
 
+        # 新たに作成した特徴量を全てfloat32に変換
+        to_float32 = list(set(df.columns) - set(original_columns))
         df[to_float32] = df[to_float32].astype("float32")
 
         # sold out
-        wins = [60]
-        for win in wins:
-            df['rolling_sum_backward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum())
-            df['rolling_sum_forward'] = df.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum().shift(1 - win))
-            df[f'sold_out_{win}'] = ((df['rolling_sum_backward'] == 0) | (df['rolling_sum_forward'] == 0)).astype(int)
-            df = df.drop(['rolling_sum_backward', 'rolling_sum_forward'], axis=1)
+        win = 60
+        df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
 
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
         df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
         return df
+
+    @staticmethod
+    def _calculate_lag(df: pd.DataFrame, lag: int) -> pd.Series:
+        return df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag))
+
+    @staticmethod
+    def _calculate_rolling_mean(df: pd.DataFrame, lag: int, win: int) -> pd.Series:
+        return df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).mean())
+
+    @staticmethod
+    def _calculate_sold_out(df: pd.DataFrame, win: int) -> pd.Series:
+        df_copy = df.copy()
+        df_copy['rolling_sum_backward'] = df_copy.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum())
+        df_copy['rolling_sum_forward'] = df_copy.groupby('id')['demand'].transform(lambda x: x.rolling(win).sum().shift(1 - win))
+        return ((df_copy['rolling_sum_backward'] == 0) | (df_copy['rolling_sum_forward'] == 0)).astype(int)
