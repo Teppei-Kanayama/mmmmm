@@ -19,7 +19,7 @@ class ValidatePointwise(gokart.TaskOnKart):
     interval: int = luigi.IntParameter()
 
     def output(self):
-        return self.make_target('validation/validation.csv')
+        return self.make_target(f'validation/validation_{self.validate_from_date}_{self.validate_to_date}.csv')
 
     def requires(self):
         ground_truth_task = PreprocessSales(is_small=self.is_small)

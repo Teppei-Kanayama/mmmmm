@@ -64,6 +64,7 @@ class PredictPointwise(gokart.TaskOnKart):
 
     is_small: bool = luigi.BoolParameter()
 
+    train_to_date: int = luigi.IntParameter(default=1914)  # 学習終了日（固定）
     prediction_start_date: int = luigi.IntParameter(default=1914)  # 予測開始日（固定）
     predict_from_date: int = luigi.IntParameter()  # 分割後の予測開始日
     predict_to_date: int = luigi.IntParameter()  # 分割後の予測終了日
@@ -74,7 +75,7 @@ class PredictPointwise(gokart.TaskOnKart):
                                 use_unique_id=False)
 
     def requires(self):
-        trained_model_task = TrainPointwiseModel(train_to_date=self.prediction_start_date)
+        trained_model_task = TrainPointwiseModel(train_to_date=self.train_to_date)
         assert trained_model_task.input()['model'].exists(), "trained model doesn't exists!"
 
         calendar_data_task = PreprocessCalendar()

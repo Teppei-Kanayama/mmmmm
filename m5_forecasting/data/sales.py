@@ -42,8 +42,14 @@ class PreprocessSales(gokart.TaskOnKart):
 class MekeSalesFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
+    # 特徴量作成のための元データ（真の値）
     sales_data_task = gokart.TaskInstanceParameter()
+
+    # 特徴量作成のための元データ（予測値を真の値と見なして補う）
     predicted_sales_data_task = gokart.TaskInstanceParameter()
+
+    # 特徴量を作る必要がある対象期間
+    # Noneの場合は全ての期間に対して特徴量を作る
     from_date: int = luigi.IntParameter(default=None)
     to_date: int = luigi.IntParameter(default=None)
 
@@ -62,6 +68,8 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
     @classmethod
     def _run(cls, df, from_date, to_date):
+        # from_date - bufferからto_dateまでに限定して特徴量を作ることで計算量を削減する
+        # 過去のsalesデータを使って特徴量を作るためにbufferを用意している
         original_columns = df.columns
         buffer = 28 + 180  # TODO: decide buffer automatically
         if from_date and to_date:
