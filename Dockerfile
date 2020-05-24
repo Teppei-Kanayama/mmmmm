@@ -22,3 +22,4 @@ VOLUME "/app"
 ENV TASK_WORKSPACE_DIRECTORY s3://kaggle-m5-filestore/
 ENV DATA_SIZE small
 CMD ["python", "script/predict_pointwise_batch.py", "7"]
+CMD ["sudo", "shutdown", "-h", "now"]
