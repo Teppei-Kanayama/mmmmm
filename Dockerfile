@@ -17,9 +17,9 @@ COPY ./main.py /app/main.py
 COPY ./script /app/script
 
 WORKDIR /app
-ENTRYPOINT [ "/bin/bash" ]
 VOLUME "/app"
 
 CMD ["export", "TASK_WORKSPACE_DIRECTORY=s3://kaggle-m5-filestore/"]
+CMD ["export", "DATA_SIZE=small"]
 CMD ["echo", "start!"]
-CMD ["DATA_SIZE=small", "python", "script/predict_pointwise_batch.py", "7"]
+CMD ["python", "script/predict_pointwise_batch.py", "7"]
