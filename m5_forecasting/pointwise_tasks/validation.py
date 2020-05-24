@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import gokart
 import luigi
 import pandas as pd
@@ -19,7 +21,8 @@ class ValidatePointwise(gokart.TaskOnKart):
     interval: int = luigi.IntParameter()
 
     def output(self):
-        return self.make_target(f'validation/validation_{self.validate_from_date}_{self.validate_to_date}.csv')
+        return dict(score=self.make_target(f'validation/score_{self.validate_from_date}_{self.validate_to_date}.csv'),
+                    score_df=self.make_target(f'validation/score_df_{self.validate_from_date}_{self.validate_to_date}.csv'))
 
     def requires(self):
         ground_truth_task = PreprocessSales(is_small=self.is_small)
@@ -38,26 +41,24 @@ class ValidatePointwise(gokart.TaskOnKart):
         sales = self.load_data_frame('sales')
         rmsse_weight = self.load_data_frame('rmsse_weight')
         roll_matrix = pd.read_pickle('resources/input/roll_mat_df.pkl')
-        output = self._run(ground_truth, prediction, sample_submission, sales, rmsse_weight, roll_matrix,
-                           self.validate_from_date, self.validate_to_date)
-        self.dump(output)
+        score, score_df = self._run(ground_truth, prediction, sample_submission, sales, rmsse_weight, roll_matrix,
+                                    self.validate_from_date, self.validate_to_date)
+        self.dump(score, 'score')
+        self.dump(score_df, 'score_df')
 
     @classmethod
     def _run(cls, ground_truth: pd.DataFrame, prediction: pd.DataFrame, sample_submission, sales, rmsse_weight, roll_matrix,
-             validate_from_date: int, validate_to_date: int) -> pd.DataFrame:
+             validate_from_date: int, validate_to_date: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
         ground_truth = ground_truth[ground_truth['d'].between(validate_from_date, validate_to_date - 1)]
         pivot_prediction = cls._make_pivot(prediction)
         pivot_ground_truth = cls._make_pivot(ground_truth)
         roll_mat_csr = csr_matrix(roll_matrix.values)
         calculator = WRMSSECalculator(weight=rmsse_weight, roll_mat_csr=roll_mat_csr, sample_submission=sample_submission, sales=sales)
         score, score_df = calculator.calculate_scores(pivot_prediction, pivot_ground_truth)
-        print(score)
-        return score_df
+        score = pd.DataFrame(dict(score=[score]))
+        return score, score_df
 
     @staticmethod
     def _make_pivot(df: pd.DataFrame) -> pd.DataFrame:
         df = df.assign(id=df['id'] + "_" + "validation", V="V" + df['d'].astype(str))
         return df.pivot(index="id", columns="V", values="demand").reset_index()
-
-
- # python main.py m5-forecasting.SubmitUncertainty --local-scheduler
