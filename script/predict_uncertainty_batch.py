@@ -27,6 +27,7 @@ def main():
          f'--m5-forecasting.CalculateVariance-variance-to-date={variance_to_date}',
          '--local-scheduler'])
 
+    subprocess.run(['sudo' 'shutdown' '-h' 'now'])
 
 if __name__ == '__main__':
     main()

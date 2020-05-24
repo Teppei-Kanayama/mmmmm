@@ -26,6 +26,8 @@ def main():
          f'--validate-to-date={validate_to_date}',
          '--local-scheduler'])
 
+    subprocess.run(['sudo' 'shutdown' '-h' 'now'])
+
 
 if __name__ == '__main__':
     main()
