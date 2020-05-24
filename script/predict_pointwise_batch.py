@@ -10,7 +10,6 @@ def main():
         subprocess.run(['python', 'main.py', 'm5-forecasting.PredictPointwise', f'--predict-from-date={t}', f'--predict-to-date={t+interval}',
                         f'--interval={interval}', '--local-scheduler'])
     subprocess.run(['python', 'main.py', 'm5-forecasting.SubmitPointwise', f'--interval={interval}', '--local-scheduler'])
-    # subprocess.run(['sudo' 'shutdown' '-h' 'now'])
 
 
 if __name__ == '__main__':
