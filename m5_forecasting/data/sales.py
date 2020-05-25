@@ -83,13 +83,13 @@ class MekeSalesFeature(gokart.TaskOnKart):
                 df[f'grouped_lag_{level}_lag{lag}'] = cls._calculate_grouped_lag(df, level, lag)
 
         # lag
-        lags = [28]
+        lags = [i for i in range(28, 28 + 15)]
         for lag in lags:
             df[f'lag{lag}'] = cls._calculate_lag(df, lag)
 
         # rolling mean
         lags = [7, 14]
-        wins = [7, 60]
+        wins = [7, 14, 30, 60]
         for lag in lags:
             for win in wins:
                 df[f'rolling_mean_lag{lag}_win{win}'] = cls._calculate_rolling_mean(df, lag, win)
