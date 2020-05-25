@@ -3,12 +3,43 @@ from typing import Tuple
 import gokart
 import luigi
 import pandas as pd
+import numpy as np
 from scipy.sparse import csr_matrix
 
 from m5_forecasting.data.load import LoadInputData
 from m5_forecasting.data.sales import PreprocessSales
 from m5_forecasting.metric.wrmsse import WRMSSECalculator
 from m5_forecasting.pointwise_tasks.submit import Load
+
+
+class CalculateRollMatrix(gokart.TaskOnKart):
+    task_namespace = 'm5-forecasting'
+
+    def requires(self):
+        return LoadInputData(filename='sales_train_validation.csv')
+
+    def run(self):
+        sales = self.load_data_frame()
+
+        # List of categories combinations for aggregations as defined in docs:
+        dummies_list = [sales.state_id, sales.store_id, sales.cat_id, sales.dept_id,
+                        sales.state_id + '_' + sales.cat_id, sales.state_id + '_' + sales.dept_id,
+                        sales.store_id + '_' + sales.cat_id, sales.store_id + '_' + sales.dept_id, sales.item_id,
+                        sales.state_id + '_' + sales.item_id, sales.id]
+
+        ## First element Level_0 aggregation 'all_sales':
+        dummies_df_list = [pd.DataFrame(np.ones(sales.shape[0]).astype(np.int8), index=sales.index, columns=['all']).T]
+
+        # List of dummy dataframes:
+        for i, cats in enumerate(dummies_list):
+            dummies_df_list += [pd.get_dummies(cats, drop_first=False, dtype=np.int8).T]
+
+        # Concat dummy dataframes in one go:
+        ## Level is constructed for free.
+        roll_mat_df = pd.concat(dummies_df_list, keys=list(range(12)),
+                                names=['level', 'id'])
+
+        self.dump(roll_mat_df)
 
 
 class ValidatePointwise(gokart.TaskOnKart):
@@ -31,8 +62,9 @@ class ValidatePointwise(gokart.TaskOnKart):
         sample_submission_task = LoadInputData(filename='sample_submission.csv')
         sales_task = LoadInputData(filename='sales_train_validation.csv')
         rmsse_weight_task = LoadInputData(filename='weights_validation.csv')
+        roll_matrix_task = CalculateRollMatrix()
         return dict(ground_truth=ground_truth_task, predict=prediction_load_tasks, sample_submission=sample_submission_task,
-                    sales=sales_task, rmsse_weight=rmsse_weight_task)
+                    sales=sales_task, rmsse_weight=rmsse_weight_task, roll_matrix=roll_matrix_task)
 
     def run(self):
         ground_truth = self.load_data_frame('ground_truth')
@@ -40,7 +72,7 @@ class ValidatePointwise(gokart.TaskOnKart):
         sample_submission = self.load_data_frame('sample_submission')
         sales = self.load_data_frame('sales')
         rmsse_weight = self.load_data_frame('rmsse_weight')
-        roll_matrix = pd.read_pickle('resources/input/roll_mat_df.pkl')
+        roll_matrix = self.load('roll_matrix')
         score, score_df = self._run(ground_truth, prediction, sample_submission, sales, rmsse_weight, roll_matrix,
                                     self.validate_from_date, self.validate_to_date)
         self.dump(score, 'score')

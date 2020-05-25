@@ -9,4 +9,3 @@ aws s3 cp resources/input/sample_submission_uncertainty.csv s3://kaggle-m5-files
 aws s3 cp resources/input/sell_prices.csv s3://kaggle-m5-filestore/input/
 aws s3 cp resources/input/weights_validation.csv s3://kaggle-m5-filestore/input/
 aws s3 cp resources/input/sell_prices.csv s3://kaggle-m5-filestore/input/
-aws s3 cp resources/input/roll_mat_df.pkl s3://kaggle-m5-filestore/input/
