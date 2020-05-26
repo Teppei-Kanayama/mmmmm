@@ -27,7 +27,7 @@ class TrainPointwiseModel(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()
-    train_to_date: int = luigi.IntParameter(default=1914)
+    train_to_date: int = luigi.IntParameter()
     filter_by_adversarial_validation: bool = luigi.BoolParameter()  # TODO: adversarial validation shold be set by setting file.
 
     def requires(self):
@@ -48,7 +48,3 @@ class TrainPointwiseModel(gokart.TaskOnKart):
 
     def output(self):
         return self.input()
-
-
- # python main.py m5-forecasting.TrainPointwiseModel --local-scheduler
- # DATA_SIZE=small python main.py m5-forecasting.TrainPointwiseModel --local-scheduler

@@ -17,6 +17,7 @@ def predict_and_validate(train_to_date, validate_from_date, validate_to_date, in
                     f'--validate-from-date={validate_from_date}', f'--validate-to-date={validate_to_date}',
                     '--local-scheduler'])
 
+
 def main():
     train_to_date = 1914 - 56  # TODO: 設定ファイルのvalidation期間を0にする
 
