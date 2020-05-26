@@ -49,7 +49,7 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
                       'subsample': 0.5,  # TODO: 重要, bagging_fractionと同じ。
                       'subsample_freq': 1,  # TODO: CVで決める bagging_freqと同じ。
                       'learning_rate': 0.1,  # あとで小さくする。
-                      'num_leaves': 128,  # TODO: 超重要  # もともとは 2 ** 11 - 1 だったが2~3時間経っても終わらない
+                      'num_leaves': 512,  # TODO: 超重要  # もともとは 2 ** 11 - 1 だったが2~3時間経っても終わらない
                       'min_data_in_leaf': min_data_in_leaf,  # TODO: 重要
                       'feature_fraction': 0.5,  # TODO: 重要
                       'max_bin': 100,
