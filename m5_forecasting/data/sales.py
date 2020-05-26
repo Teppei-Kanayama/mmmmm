@@ -76,11 +76,11 @@ class MekeSalesFeature(gokart.TaskOnKart):
             df = df[(from_date - buffer <= df['d']) & (df['d'] < to_date)]
 
         # grouped lag
-        lags = [7, 14]
-        levels = ['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id']
-        for lag in lags:
-            for level in levels:
-                df[f'grouped_lag_{level}_lag{lag}'] = cls._calculate_grouped_lag(df, level, lag)
+        # lags = [7, 14]
+        # levels = ['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id']
+        # for lag in lags:
+        #     for level in levels:
+        #         df[f'grouped_lag_{level}_lag{lag}'] = cls._calculate_grouped_lag(df, level, lag)
 
         # lag
         lags = [i for i in range(28, 28 + 15)]
