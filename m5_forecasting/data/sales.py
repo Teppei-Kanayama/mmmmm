@@ -83,18 +83,18 @@ class MekeSalesFeature(gokart.TaskOnKart):
         #         df[f'grouped_lag_{level}_lag{lag}'] = cls._calculate_grouped_lag(df, level, lag)
 
         # grouped rolling mean
-        lags = [7]
-        wins = [7, 14, 30]
-        levels = ['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id']
-        for lag in lags:
-            for win in wins:
-                for level in levels:
-                    df[f'grouped_lag_{level}_lag{lag}_win{win}'] = cls._calculate_grouped_rolling_mean(df, level, lag, win)
+        # lags = [7]
+        # wins = [7, 14, 30]
+        # levels = ['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id']
+        # for lag in lags:
+        #     for win in wins:
+        #         for level in levels:
+        #             df[f'grouped_lag_{level}_lag{lag}_win{win}'] = cls._calculate_grouped_rolling_mean(df, level, lag, win)
 
         # lag
-        # lags = [i for i in range(28, 28 + 15)]
-        # for lag in lags:
-        #     df[f'lag{lag}'] = cls._calculate_lag(df, lag)
+        lags = [i for i in range(28, 28 + 15)]
+        for lag in lags:
+            df[f'lag{lag}'] = cls._calculate_lag(df, lag)
 
         # rolling mean
         lags = [7, 14]
@@ -118,8 +118,8 @@ class MekeSalesFeature(gokart.TaskOnKart):
         df[to_float32] = df[to_float32].astype("float32")
 
         # sold out
-        win = 60
-        df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
+        # win = 60
+        # df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
 
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
         df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
