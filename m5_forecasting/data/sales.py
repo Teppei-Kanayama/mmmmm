@@ -82,6 +82,15 @@ class MekeSalesFeature(gokart.TaskOnKart):
         #     for level in levels:
         #         df[f'grouped_lag_{level}_lag{lag}'] = cls._calculate_grouped_lag(df, level, lag)
 
+        # grouped rolling mean
+        lags = [7, 14]
+        wins = [7, 14, 30, 60]
+        levels = ['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id']
+        for lag in lags:
+            for win in wins:
+                for level in levels:
+                    df[f'grouped_lag_{level}_lag{lag}_win{win}'] = cls._calculate_grouped_rolling_mean(df, level, lag, win)
+
         # lag
         lags = [i for i in range(28, 28 + 15)]
         for lag in lags:
@@ -121,14 +130,20 @@ class MekeSalesFeature(gokart.TaskOnKart):
         return df.groupby(['id'])[target_column].transform(lambda x: x.shift(lag))
 
     @staticmethod
-    def _calculate_rolling_mean(df: pd.DataFrame, lag: int, win: int) -> pd.Series:
-        return df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).mean())
+    def _calculate_rolling_mean(df: pd.DataFrame, lag: int, win: int, target_column: str = 'demand') -> pd.Series:
+        return df.groupby(['id'])[target_column].transform(lambda x: x.shift(lag).rolling(win).mean())
 
     @classmethod
     def _calculate_grouped_lag(cls, df: pd.DataFrame, level: str, lag: int) -> pd.Series:
         df = df.copy()
         df['grouped_demand'] = df.groupby(['d', level])['demand'].transform('sum')
         return cls._calculate_lag(df, lag, target_column='grouped_demand')
+
+    @classmethod
+    def _calculate_grouped_rolling_mean(cls, df: pd.DataFrame, level: str, lag: int, win: int) -> pd.Series:
+        df = df.copy()
+        df['grouped_demand'] = df.groupby(['d', level])['demand'].transform('sum')
+        return cls._calculate_rolling_mean(df, lag, win, target_column='grouped_demand')
 
     @staticmethod
     def _calculate_sold_out(df: pd.DataFrame, win: int) -> pd.Series:
