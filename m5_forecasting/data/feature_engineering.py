@@ -5,7 +5,9 @@ import gokart
 import luigi
 from sklearn.preprocessing import OrdinalEncoder
 from tqdm import tqdm
+import pandas as pd
 
+from m5_forecasting.data.load import LoadInputData
 
 logger = getLogger(__name__)
 
@@ -48,19 +50,49 @@ class MakeFeature(gokart.TaskOnKart):
     is_small: bool = luigi.BoolParameter()
 
     def requires(self):
-        return dict(data=self.merged_data_task)
+        feature1_task = LoadInputData(filename='grid_part_1.pkl')
+        feature2_task = LoadInputData(filename='grid_part_2.pkl')
+        feature3_task = LoadInputData(filename='grid_part_3.pkl')
+        return dict(data=self.merged_data_task, feature1=feature1_task, feature2=feature2_task,
+                    feature3=feature3_task)
 
     def run(self):
         data = self.load_data_frame('data')
-        self.dump(self._run(data))
+        feature1 = self.load('feature1')
+        feature2 = self.load('feature2')
+        feature3 = self.load('feature3')
+        output = self._run(data, feature1, feature2, feature3)
+        self.dump(output)
 
     @classmethod
-    def _run(cls, data):
+    def _run(cls, data, feature1, feature2, feature3):
         data = cls._label_encode(data)
+        data = cls._merge_outside_feature(data, feature1, feature2, feature3)
         return data
 
     @staticmethod
     def _label_encode(data):
         for i, v in tqdm(enumerate(["item_id", "dept_id", "store_id", "cat_id", "state_id"])):
             data[v] = OrdinalEncoder(dtype="int").fit_transform(data[[v]]).astype("int16") + 1
+        return data
+
+    @staticmethod
+    def _merge_outside_feature(data, feature1, feature2, feature3):
+        # データのフォーマットを合わせる
+        feature1['id'] = feature1['id'].apply(lambda x: x.split('_validation')[0])
+        feature2['id'] = feature2['id'].apply(lambda x: x.split('_validation')[0])
+        feature3['id'] = feature3['id'].apply(lambda x: x.split('_validation')[0])
+        feature2['d'] = feature2['d'].apply(lambda x: int(x.split('_')[1]))
+        feature3['d'] = feature3['d'].apply(lambda x: int(x.split('_')[1]))
+
+        # 必要なカラムを取り出す
+        feature1_columns = ['id', 'd', 'release']
+        feature2_columns = ['id', 'd', 'price_max', 'price_min', 'price_std', 'price_mean', 'price_norm', 'price_nunique', 'item_nunique',
+                            'price_momentum', 'price_momentum_m', 'price_momentum_y']
+        feature3_columns = ['id', 'd', 'tm_d', 'tm_w', 'tm_m', 'tm_y', 'tm_wm', 'tm_dw', 'tm_w_end']
+
+        # mergeする
+        data = pd.merge(data, feature1[feature1_columns], on=['id', 'd'], how='inner')
+        data = pd.merge(data, feature2[feature2_columns], on=['id', 'd'], how='inner')
+        data = pd.merge(data, feature3[feature3_columns], on=['id', 'd'], how='inner')
         return data
