@@ -30,6 +30,10 @@ class PreprocessCalendar(gokart.TaskOnKart):
         df[to_ordinal] = df[to_ordinal].fillna("1")
         df[to_ordinal] = OrdinalEncoder(dtype="int").fit_transform(df[to_ordinal]) + 1
 
+        for i in range(7):
+            df[f'event_name_1_{i}'] = df['event_name_1'].shift(i)
+            df[f'event_name_1_-{i}'] = df['event_name_1'].shift(-i)
+
         # 日付に関する特徴量を追加する
         df['date'] = pd.to_datetime(df['date'])
         df['week_of_year'] = df['date'].dt.weekofyear
