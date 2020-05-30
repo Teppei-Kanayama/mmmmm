@@ -69,7 +69,7 @@ class MakeFeature(gokart.TaskOnKart):
     @classmethod
     def _run(cls, data, feature1, feature2, feature3, mean_encoding_feature):
         data = cls._label_encode(data)
-        # data = cls._merge_outside_feature(data, feature1, feature2, feature3, mean_encoding_feature)
+        data = cls._merge_outside_feature(data, feature1, feature2, feature3, mean_encoding_feature)
         return data
 
     @staticmethod
