@@ -82,13 +82,13 @@ class MakeFeature(gokart.TaskOnKart):
     def _merge_outside_feature(data, feature1, feature2, feature3, mean_encoding_feature):
         logger.info('merge mean_encoding_feature ...')
         mean_encoding_feature['id'] = mean_encoding_feature['id'].apply(lambda x: x.split('_validation')[0])
-        data = pd.merge(data, mean_encoding_feature, on=['id', 'd'], how='inner')
+        data = pd.merge(data, mean_encoding_feature, on=['id', 'd'], how='left')
         del mean_encoding_feature
 
         logger.info('merge feature1 ...')
         feature1['id'] = feature1['id'].apply(lambda x: x.split('_validation')[0])
         feature1_columns = ['id', 'd', 'release']
-        data = pd.merge(data, feature1[feature1_columns], on=['id', 'd'], how='inner')
+        data = pd.merge(data, feature1[feature1_columns], on=['id', 'd'], how='left')
         del feature1
 
         logger.info('merge feature2 ...')
@@ -97,14 +97,14 @@ class MakeFeature(gokart.TaskOnKart):
         feature2_columns = ['id', 'd', 'price_max', 'price_min', 'price_std', 'price_mean', 'price_norm',
                             'price_nunique', 'item_nunique',
                             'price_momentum', 'price_momentum_m', 'price_momentum_y']
-        data = pd.merge(data, feature2[feature2_columns], on=['id', 'd'], how='inner')
+        data = pd.merge(data, feature2[feature2_columns], on=['id', 'd'], how='left')
         del feature2
 
         logger.info('merge feature3 ...')
         feature3['id'] = feature3['id'].apply(lambda x: x.split('_validation')[0])
         feature3['d'] = feature3['d'].apply(lambda x: int(x.split('_')[1]))
         feature3_columns = ['id', 'd', 'tm_d', 'tm_w', 'tm_m', 'tm_y', 'tm_wm', 'tm_dw', 'tm_w_end']
-        data = pd.merge(data, feature3[feature3_columns], on=['id', 'd'], how='inner')
+        data = pd.merge(data, feature3[feature3_columns], on=['id', 'd'], how='left')
         del feature3
 
         return data
