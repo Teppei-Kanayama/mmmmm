@@ -92,7 +92,7 @@ class MakeFeature(gokart.TaskOnKart):
         feature3_columns = ['id', 'd', 'tm_d', 'tm_w', 'tm_m', 'tm_y', 'tm_wm', 'tm_dw', 'tm_w_end']
 
         # mergeする
-        data = pd.merge(data, feature1[feature1_columns], on=['id', 'd'], how='left')
-        data = pd.merge(data, feature2[feature2_columns], on=['id', 'd'], how='left')
-        data = pd.merge(data, feature3[feature3_columns], on=['id', 'd'], how='left')
+        data = pd.merge(data, feature1[feature1_columns], on=['id', 'd'], how='inner')
+        data = pd.merge(data, feature2[feature2_columns], on=['id', 'd'], how='inner')
+        data = pd.merge(data, feature3[feature3_columns], on=['id', 'd'], how='inner')
         return data
