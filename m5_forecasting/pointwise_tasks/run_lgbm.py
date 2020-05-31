@@ -41,23 +41,23 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
         train_set = lgb.Dataset(data['x_train'][feature_columns], data['y_train'])
         val_set = lgb.Dataset(data['x_val'][feature_columns], data['y_val'])
 
-        # min_data_in_leaf = 2 ** 12 - 1 if data['x_train']['id'].nunique() > 10 else None
-        # lgb_params = {'boosting_type': 'gbdt',   # 固定
-        #               'objective': 'tweedie',
-        #               'tweedie_variance_power': 1.1,   # TODO: CVで決める
-        #               'metric': 'rmse',  # 固定。なんでもいい
-        #               'subsample': 0.5,  # TODO: 重要, bagging_fractionと同じ。
-        #               'subsample_freq': 1,  # TODO: CVで決める bagging_freqと同じ。
-        #               'learning_rate': 0.03,  # あとで小さくする。 kernelにあわせた 0.1 -> 0.03
-        #               'num_leaves': 2 ** 11 - 1,
-        #               'min_data_in_leaf': min_data_in_leaf,  # TODO: 重要
-        #               'feature_fraction': 0.5,  # TODO: 重要
-        #               'max_bin': 100,
-        #               'n_estimators': 1400,  # TODO: CVで決める。何回で学習をやめるか？ early stoppingを使わない場合はこれが重要になる。
-        #               }
+        min_data_in_leaf = 2 ** 12 - 1 if data['x_train']['id'].nunique() > 10 else None
+        lgb_params = {'boosting_type': 'gbdt',   # 固定
+                      'objective': 'tweedie',
+                      'tweedie_variance_power': 1.1,   # TODO: CVで決める
+                      'metric': 'rmse',  # 固定。なんでもいい
+                      'subsample': 0.5,  # TODO: 重要, bagging_fractionと同じ。
+                      'subsample_freq': 1,  # TODO: CVで決める bagging_freqと同じ。
+                      'learning_rate': 0.03,  # あとで小さくする。 0.1 -> 0.03 -> 0.075
+                      'num_leaves': 2 ** 11 - 1,
+                      'min_data_in_leaf': min_data_in_leaf,  # TODO: 重要
+                      'feature_fraction': 0.5,  # TODO: 重要
+                      'max_bin': 100,
+                      'n_estimators': 2500,  # TODO: CVで決める。early stoppingを使わない場合はこれが重要になる。 1400 -> 2500
+                      }
 
-        lgb_params = {"objective": "poisson", "metric": "rmse", "force_row_wise": True, "learning_rate": 0.075,
-                      "sub_row": 0.75, "bagging_freq": 1, "lambda_l2": 0.1, 'verbosity': 1, 'num_iterations': 2500, }
+        # lgb_params = {"objective": "poisson", "metric": "rmse", "force_row_wise": True, "learning_rate": 0.075,
+        #               "sub_row": 0.75, "bagging_freq": 1, "lambda_l2": 0.1, 'verbosity': 1, 'num_iterations': 2500, }
 
         valid_sets = [train_set, val_set] if not data['x_val'].empty else None
         model = lgb.train(lgb_params, train_set, num_boost_round=num_boost_round, early_stopping_rounds=early_stopping_rounds,
