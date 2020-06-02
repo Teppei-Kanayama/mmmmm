@@ -5,7 +5,6 @@ from typing import List
 import gokart
 import luigi
 import pandas as pd
-from lightgbm import Booster
 
 from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
