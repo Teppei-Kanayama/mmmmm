@@ -21,11 +21,6 @@ logger = getLogger(__name__)
 # public 0.51361
 
 
-# VALIDATION_START_DATE = 1914
-# EVALUATION_START_DATE = 1942
-# DURATION = 28
-
-
 class EmptySalesTask(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
@@ -68,8 +63,8 @@ class PredictPointwise(gokart.TaskOnKart):
 
     is_small: bool = luigi.BoolParameter()
 
-    train_to_date: int = luigi.IntParameter(default=1914)  # 学習終了日（固定）
-    prediction_start_date: int = luigi.IntParameter(default=1914)  # 予測開始日（固定）
+    train_to_date: int = luigi.IntParameter()  # 学習終了日（固定）
+    prediction_start_date: int = luigi.IntParameter()  # 予測開始日（固定）
     predict_from_date: int = luigi.IntParameter()  # 分割後の予測開始日
     predict_to_date: int = luigi.IntParameter()  # 分割後の予測終了日
     interval: int = luigi.IntParameter()
@@ -111,5 +106,3 @@ class PredictPointwise(gokart.TaskOnKart):
         pred = model.predict(test[feature_columns])
         sales.loc[sales[(sales['id'].isin(test['id'])) & (sales['d'].isin(test['d']))].index, 'demand'] = pred
         return sales[(predict_from_date <= sales['d']) & (sales['d'] < predict_to_date)]
-
-# DATA_SIZE=small python main.py m5-forecasting.Predict --from-date 1914 --to-date 1915 --interval 1 --local-scheduler

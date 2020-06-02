@@ -16,7 +16,7 @@ class CalculateRollMatrix(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     def requires(self):
-        return LoadInputData(filename='sales_train_validation.csv')
+        return LoadInputData(filename='sales_train_evaluation.csv')
 
     def run(self):
         sales = self.load_data_frame()
@@ -60,7 +60,7 @@ class ValidatePointwise(gokart.TaskOnKart):
         prediction_load_tasks = [Load(from_date=t, to_date=t + self.interval) for t in
                                  range(self.validate_from_date, self.validate_to_date, self.interval)]
         sample_submission_task = LoadInputData(filename='sample_submission.csv')
-        sales_task = LoadInputData(filename='sales_train_validation.csv')
+        sales_task = LoadInputData(filename='sales_train_evaluation.csv')
         rmsse_weight_task = LoadInputData(filename='weights_validation.csv')
         roll_matrix_task = CalculateRollMatrix()
         return dict(ground_truth=ground_truth_task, predict=prediction_load_tasks, sample_submission=sample_submission_task,
@@ -92,5 +92,5 @@ class ValidatePointwise(gokart.TaskOnKart):
 
     @staticmethod
     def _make_pivot(df: pd.DataFrame) -> pd.DataFrame:
-        df = df.assign(id=df['id'] + "_" + "validation", V="V" + df['d'].astype(str))
+        df = df.assign(id=df['id'] + "_" + "evaluation", V="V" + df['d'].astype(str))
         return df.pivot(index="id", columns="V", values="demand").reset_index()

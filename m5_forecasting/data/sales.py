@@ -16,10 +16,10 @@ class PreprocessSales(gokart.TaskOnKart):
     is_small: bool = luigi.BoolParameter()
 
     def requires(self):
-        return LoadInputData(filename='sales_train_validation.csv')
+        return LoadInputData(filename='sales_train_evaluation.csv')
 
     def run(self):
-        required_columns = {'id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'} | set([f'd_{d}' for d in range(1, 1914)])
+        required_columns = {'id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'} | set([f'd_{d}' for d in range(1, 1942)])
         data = self.load_data_frame(required_columns=required_columns)
         output = self._run(data, self.drop_old_data_days, self.is_small)
         self.dump(output)
@@ -30,8 +30,8 @@ class PreprocessSales(gokart.TaskOnKart):
             df = df.iloc[:3]
         else:
             df = df.drop(["d_" + str(i + 1) for i in range(drop_old_data_days - 1)], axis=1)
-        df['id'] = df['id'].str.replace('_validation', '')
-        df = df.reindex(columns=df.columns.tolist() + ["d_" + str(1913 + i + 1) for i in range(2 * 28)])
+        df['id'] = df['id'].str.replace('_evaluation', '')
+        df = df.reindex(columns=df.columns.tolist() + ["d_" + str(1942 + i) for i in range(28)])
 
         df = df.melt(id_vars=["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"], var_name='d',
                      value_name='demand')
@@ -126,7 +126,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
         df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
 
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
-        df = df[(df.d >= 1914) | (pd.notna(df.rolling_mean_t180))]
+        df = df[(df.d >= 1942) | (pd.notna(df.rolling_mean_t180))]
         return df
 
     @staticmethod
