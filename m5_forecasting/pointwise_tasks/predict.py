@@ -15,7 +15,10 @@ from m5_forecasting.pointwise_tasks.train import TrainPointwiseModel
 
 logger = getLogger(__name__)
 
-# best score: 0.549 (再現済み)
+# best score
+# 1858_1886 0.615918893857194
+# 1886_1914 0.564103940972861
+# public 0.51361
 
 # VALIDATION_START_DATE = 1914
 # EVALUATION_START_DATE = 1942
