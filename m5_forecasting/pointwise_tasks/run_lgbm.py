@@ -35,7 +35,7 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
         self.dump(feature_importance, 'feature_importance')
 
     @staticmethod
-    def _run(data: Dict[str, pd.DataFrame], num_boost_round: int, early_stopping_rounds: int) -> Tuple[Booster, List[str], pd.DataFrame]:
+    def _run(data: Dict[str, pd.DataFrame], num_boost_round: int, early_stopping_rounds: int):
         feature_columns = [feature for feature in data['x_train'].columns if feature not in ['id', 'd']]
         logger.info(f'feature columns: {feature_columns}')
         train_set = lgb.Dataset(data['x_train'][feature_columns], data['y_train'])
