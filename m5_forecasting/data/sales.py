@@ -140,13 +140,13 @@ class MekeSalesFeature(gokart.TaskOnKart):
     @classmethod
     def _calculate_grouped_lag(cls, df: pd.DataFrame, level: str, lag: int) -> pd.Series:
         df = df.copy()
-        df['grouped_demand'] = df.groupby(['d', level])['demand'].transform('sum')
+        df['grouped_demand'] = df.groupby(['d', level])['demand'].transform('median')
         return cls._calculate_lag(df, lag, target_column='grouped_demand')
 
     @classmethod
     def _calculate_grouped_rolling_mean(cls, df: pd.DataFrame, level: str, lag: int, win: int) -> pd.Series:
         df = df.copy()
-        df['grouped_demand'] = df.groupby(['d', level])['demand'].transform('sum')
+        df['grouped_demand'] = df.groupby(['d', level])['demand'].transform('median')
         return cls._calculate_rolling_mean(df, lag, win, target_column='grouped_demand')
 
     @staticmethod
