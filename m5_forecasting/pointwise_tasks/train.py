@@ -28,7 +28,7 @@ class TrainPointwiseModel(gokart.TaskOnKart):
 
     is_small: bool = luigi.BoolParameter()
     train_to_date: int = luigi.IntParameter()
-    filter_by_adversarial_validation: bool = luigi.BoolParameter()  # TODO: adversarial validation shold be set by setting file.
+    filter_by_adversarial_validation: bool = luigi.BoolParameter()
 
     def requires(self):
         calendar_data_task = PreprocessCalendar()

@@ -17,7 +17,7 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     feature_task = gokart.TaskInstanceParameter()
-    target_term: Tuple = luigi.ListParameter(default=[1914 - 365, 1914 - 1])
+    target_term: Tuple = luigi.ListParameter(default=[1942 - 365, 1942 - 1])
     source_term: Tuple = luigi.ListParameter()
     test_frequency: int = luigi.IntParameter(default=6)
 
@@ -84,7 +84,7 @@ class AdversarialValidation(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()
-    source_term_list: List = luigi.ListParameter(default=[[1914 - 365 * (i + 1), 1914 - 365 * i - 1] for i in range(1, 5)])
+    source_term_list: List = luigi.ListParameter(default=[[1942 - 365 * (i + 1), 1942 - 365 * i - 1] for i in range(1, 5)])
 
     def output(self):
         return self.make_target('adversarial_validation/result.csv')
