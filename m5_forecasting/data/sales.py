@@ -117,8 +117,8 @@ class MekeSalesFeature(gokart.TaskOnKart):
         df[to_float32] = df[to_float32].astype("float32")
 
         # sold out
-        win = 60
-        df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
+        # win = 60
+        # df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
 
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
         df = df[(df.d >= 1942) | (pd.notna(df.rolling_mean_t180))]
