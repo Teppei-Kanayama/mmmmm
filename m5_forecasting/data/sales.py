@@ -105,9 +105,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
         for lag in lags:
             for win in wins:
                 df[f'rolling_mean_lag{lag}_win{win}'] = cls._calculate_rolling_mean(df, lag, win)
-
-                # TODO: std? It is useless so far.
-                df[f'rolling_std_lag{lag}_win{win}'] = cls._calculate_rolling_std(df, lag, win)
+                # df[f'rolling_std_lag{lag}_win{win}'] = cls._calculate_rolling_std(df, lag, win)
 
         # longer rolling mean
         df['rolling_mean_t90'] = cls._calculate_rolling_mean(df, 28, 60)
