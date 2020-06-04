@@ -107,15 +107,12 @@ class MekeSalesFeature(gokart.TaskOnKart):
                 df[f'rolling_mean_lag{lag}_win{win}'] = cls._calculate_rolling_mean(df, lag, win)
 
                 # TODO: std? It is useless so far.
-                # df[f'rolling_std_lag{lag}_win{win}'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(lag).rolling(win).std())
+                df[f'rolling_std_lag{lag}_win{win}'] = cls._calculate_rolling_std(df, lag, win)
 
         # longer rolling mean
         df['rolling_mean_t90'] = cls._calculate_rolling_mean(df, 28, 60)
         df['rolling_mean_t90'] = cls._calculate_rolling_mean(df, 28, 90)
         df['rolling_mean_t180'] = cls._calculate_rolling_mean(df, 28, 180)
-
-        # TODO: shorter lag? NOT good so far.
-        # df['rolling_mean_lag1_win13'] = df.groupby(['id'])['demand'].transform(lambda x: x.shift(1).rolling(13).mean())
 
         # 新たに作成した特徴量を全てfloat32に変換
         to_float32 = list(set(df.columns) - set(original_columns))
@@ -136,6 +133,10 @@ class MekeSalesFeature(gokart.TaskOnKart):
     @staticmethod
     def _calculate_rolling_mean(df: pd.DataFrame, lag: int, win: int, target_column: str = 'demand') -> pd.Series:
         return df.groupby(['id'])[target_column].transform(lambda x: x.shift(lag).rolling(win).mean())
+
+    @staticmethod
+    def _calculate_rolling_std(df: pd.DataFrame, lag: int, win: int, target_column: str = 'demand') -> pd.Series:
+        return df.groupby(['id'])[target_column].transform(lambda x: x.shift(lag).rolling(win).std())
 
     @classmethod
     def _calculate_grouped_lag(cls, df: pd.DataFrame, level: str, lag: int) -> pd.Series:
