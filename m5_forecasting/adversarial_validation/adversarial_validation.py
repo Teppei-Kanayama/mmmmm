@@ -13,13 +13,17 @@ from m5_forecasting.data.load import LoadInputData
 from m5_forecasting.data.sales import PreprocessSales
 
 
+TARGET_TERM = [1942 - 365, 1942 - 1]
+SOURCE_TERM_LIST = [[1942 - 365 * (i + 1), 1942 - 365 * i - 1] for i in range(1, 5)]
+
+
 class TrainBinaryLGBM(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     feature_task = gokart.TaskInstanceParameter()
-    target_term: Tuple = luigi.ListParameter(default=[1942 - 365, 1942 - 1])
+    target_term: Tuple = luigi.ListParameter()
     source_term: Tuple = luigi.ListParameter()
-    test_frequency: int = luigi.IntParameter(default=6)
+    test_frequency: int = luigi.IntParameter()
 
     def output(self):
         model = self.make_target(relative_file_path='adversarial_validation/lgb.pkl')
@@ -84,7 +88,6 @@ class AdversarialValidation(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()
-    source_term_list: List = luigi.ListParameter(default=[[1942 - 365 * (i + 1), 1942 - 365 * i - 1] for i in range(1, 5)])
 
     def output(self):
         return self.make_target('adversarial_validation/result.csv')
@@ -96,7 +99,7 @@ class AdversarialValidation(gokart.TaskOnKart):
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task, sales_data_task=sales_data_task)
         feature_task = MakeFeature(merged_data_task=merged_data_task)
-        train_tasks = [TrainBinaryLGBM(feature_task=feature_task, source_term=source_term) for source_term in self.source_term_list]
+        train_tasks = [TrainBinaryLGBM(feature_task=feature_task, source_term=source_term, target_term=TARGET_TERM) for source_term in SOURCE_TERM_LIST]
         return dict(train=train_tasks, sales=sales_data_task)
 
     def run(self):
@@ -131,8 +134,8 @@ class AdversarialValidation(gokart.TaskOnKart):
 class FilterByAdversarialValidation(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    threshold = luigi.IntParameter(default=0.54)
     feature_task = gokart.TaskInstanceParameter()
+    threshold: float = luigi.FloatParameter()
     is_small: bool = luigi.BoolParameter()
 
     def requires(self):
