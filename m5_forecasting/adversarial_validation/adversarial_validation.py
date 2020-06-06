@@ -120,16 +120,16 @@ class AdversarialValidation(gokart.TaskOnKart):
             y_test = test_data['y_test']
             df = pd.DataFrame(dict(id=test_data['test_ids'], y_hat=y_hat_test, y=y_test))
 
-            # for i, target_id in enumerate(df['id'].unique()):
-            for i, store_id in enumerate(sales['store_id'].unique()):
-                # target_df = df[df['id'] == target_id]
-                target_df = df[df['id'].str.contains(store_id)]
+            for i, target_id in enumerate(df['id'].unique()):
+            # for i, store_id in enumerate(sales['store_id'].unique()):
+                target_df = df[df['id'] == target_id]
+                # target_df = df[df['id'].str.contains(store_id)]
                 target_y_hat = target_df['y_hat']
                 target_y = target_df['y']
                 fpr, tpr, thresholds = metrics.roc_curve(target_y, target_y_hat)
                 score = metrics.auc(fpr, tpr)
-                # score_list.append(dict(start=source_term[0], end=source_term[1], id=target_id, score=score))
-                score_list.append(dict(start=source_term[0], end=source_term[1], id=store_id, score=score))
+                score_list.append(dict(start=source_term[0], end=source_term[1], id=target_id, score=score))
+                # score_list.append(dict(start=source_term[0], end=source_term[1], id=store_id, score=score))
 
         score_df = pd.DataFrame(score_list)
         self.dump(score_df)
@@ -151,8 +151,11 @@ class FilterByAdversarialValidation(gokart.TaskOnKart):
 
         high_score_stores = adversarial_validation[adversarial_validation['score'] > self.threshold]
 
-        for start, end, store in high_score_stores[['start', 'end', 'id']].values:
-            features = features[~(features['d'].between(start, end) & features['id'].str.contains(store))]
+        # for start, end, store in high_score_stores[['start', 'end', 'id']].values:
+        #     features = features[~(features['d'].between(start, end) & features['id'].str.contains(store))]
+
+        for start, end, omit_id in high_score_stores[['start', 'end', 'id']].values:
+            features = features[~(features['d'].between(start, end) & (features['id'] == omit_id))]
 
         self.dump(features)
 
