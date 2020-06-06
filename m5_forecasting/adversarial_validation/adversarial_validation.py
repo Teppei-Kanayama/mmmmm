@@ -67,10 +67,10 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
         val_set = lgb.Dataset(X_val, y_val)
         valid_sets = [train_set, val_set]
 
-        max_depth = 3
-        subsample = 0.9
-        colsample_bytree = 1.0
-        min_child_weight = 1
+        max_depth = 3  # fix
+        subsample = 0.9  # fix
+        colsample_bytree = 1.0  # fix
+        min_child_weight = 1  # fix
         num_leaves = 5  # fix
         params = {"objective": "binary", "metric": "auc", "learning_rate": 0.01, "max_depth": max_depth, "colsample_bytree": colsample_bytree,
                   "subsample": subsample,  "lambda_l2": 1,  "min_child_weight": min_child_weight, 'verbosity': 1, "num_leaves": num_leaves}
@@ -115,13 +115,13 @@ class AdversarialValidation(gokart.TaskOnKart):
 
         score_list = []
         for model, test_data, source_term in zip(model_list, test_data_list, SOURCE_TERM_LIST):
+            print(source_term)
             y_hat_test = model.predict(test_data['X_test'])
             y_test = test_data['y_test']
             df = pd.DataFrame(dict(id=test_data['test_ids'], y_hat=y_hat_test, y=y_test))
 
             # for i, target_id in enumerate(df['id'].unique()):
             for i, store_id in enumerate(sales['store_id'].unique()):
-                print(source_term, i)
                 # target_df = df[df['id'] == target_id]
                 target_df = df[df['id'].str.contains(store_id)]
                 target_y_hat = target_df['y_hat']
