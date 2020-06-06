@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import Tuple, List
 
 import gokart
@@ -12,6 +13,8 @@ from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
 from m5_forecasting.data.load import LoadInputData
 from m5_forecasting.data.sales import PreprocessSales
 
+
+logger = getLogger(__name__)
 
 TARGET_TERM = [1942 - 365, 1942 - 1]
 SOURCE_TERM_LIST = [[1942 - 365 * (i + 1), 1942 - 365 * i - 1] for i in range(1, 5)]
@@ -115,7 +118,7 @@ class AdversarialValidation(gokart.TaskOnKart):
 
         score_list = []
         for model, test_data, source_term in zip(model_list, test_data_list, SOURCE_TERM_LIST):
-            print(source_term)
+            logger.info(source_term)
             y_hat_test = model.predict(test_data['X_test'])
             y_test = test_data['y_test']
             df = pd.DataFrame(dict(id=test_data['test_ids'], y_hat=y_hat_test, y=y_test))
