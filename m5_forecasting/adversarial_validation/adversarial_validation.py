@@ -67,13 +67,13 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
         val_set = lgb.Dataset(X_val, y_val)
         valid_sets = [train_set, val_set]
 
-        # TODO: change parameters!
-        max_depth = 5
+        max_depth = 3
         subsample = 0.9
         colsample_bytree = 1.0
         min_child_weight = 1
+        num_leaves = 5  # fix
         params = {"objective": "binary", "metric": "auc", "learning_rate": 0.01, "max_depth": max_depth, "colsample_bytree": colsample_bytree,
-                  "subsample": subsample,  "lambda_l2": 1,  "min_child_weight": min_child_weight, 'verbosity': 1, "num_leaves": 10}
+                  "subsample": subsample,  "lambda_l2": 1,  "min_child_weight": min_child_weight, 'verbosity': 1, "num_leaves": num_leaves}
         num_boost_round = 1000
         early_stopping_rounds = 100
 
