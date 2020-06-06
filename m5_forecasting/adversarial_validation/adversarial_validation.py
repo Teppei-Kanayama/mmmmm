@@ -68,8 +68,12 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
         valid_sets = [train_set, val_set]
 
         # TODO: change parameters!
-        params = {"objective": "binary", "metric": "auc", "learning_rate": 0.075, "max_depth": 5, "colsample_bytree": 1.0,
-                  "subsample": 0.9,  "lambda_l2": 1,  "min_child_weight": 1, 'verbosity': 1, "num_leaves": 10}
+        max_depth = 5
+        subsample = 0.9
+        colsample_bytree = 1.0
+        min_child_weight = 1
+        params = {"objective": "binary", "metric": "auc", "learning_rate": 0.01, "max_depth": max_depth, "colsample_bytree": colsample_bytree,
+                  "subsample": subsample,  "lambda_l2": 1,  "min_child_weight": min_child_weight, 'verbosity': 1, "num_leaves": 10}
         num_boost_round = 1000
         early_stopping_rounds = 100
 
@@ -110,7 +114,7 @@ class AdversarialValidation(gokart.TaskOnKart):
         test_data_list = [d['test_data'] for d in data]
 
         score_list = []
-        for model, test_data, source_term in zip(model_list, test_data_list, self.source_term_list):
+        for model, test_data, source_term in zip(model_list, test_data_list, SOURCE_TERM_LIST):
             y_hat_test = model.predict(test_data['X_test'])
             y_test = test_data['y_test']
             df = pd.DataFrame(dict(id=test_data['test_ids'], y_hat=y_hat_test, y=y_test))
