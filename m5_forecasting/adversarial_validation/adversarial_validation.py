@@ -138,7 +138,7 @@ class AdversarialValidation(gokart.TaskOnKart):
         self.dump(score_df)
 
 
-class PreprocessAdversarialValidation(gokart.TaskOnKart):
+class ReshapeAdversarialValidation(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()
@@ -167,7 +167,7 @@ class FilterByAdversarialValidation(gokart.TaskOnKart):
     is_small: bool = luigi.BoolParameter()
 
     def requires(self):
-        return dict(feature=self.feature_task, adversarial_validation=PreprocessAdversarialValidation(is_small=self.is_small))
+        return dict(feature=self.feature_task, adversarial_validation=ReshapeAdversarialValidation(is_small=self.is_small))
 
     def run(self):
         features = self.load_data_frame('feature')
