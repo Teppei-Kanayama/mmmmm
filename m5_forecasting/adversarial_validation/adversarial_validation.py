@@ -138,6 +138,27 @@ class AdversarialValidation(gokart.TaskOnKart):
         self.dump(score_df)
 
 
+class PreprocessAdversarialValidation(gokart.TaskOnKart):
+    task_namespace = 'm5-forecasting'
+
+    is_small: bool = luigi.BoolParameter()
+
+    def output(self):
+        return self.make_target('adversarial_validation/preprocess_result.csv')
+
+    def requires(self):
+        return AdversarialValidation(is_small=self.is_small)
+
+    def run(self):
+        adversarial_validation = self.load_data_frame('adversarial_validation')
+        output = self._run(adversarial_validation)
+        self.dump(adversarial_validation)
+
+    @staticmethod
+    def _run(adversarial_validation):
+        import pdb; pdb.set_trace()
+
+
 class FilterByAdversarialValidation(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
@@ -146,20 +167,15 @@ class FilterByAdversarialValidation(gokart.TaskOnKart):
     is_small: bool = luigi.BoolParameter()
 
     def requires(self):
-        return dict(feature=self.feature_task, adversarial_validation=AdversarialValidation(is_small=self.is_small))
+        return dict(feature=self.feature_task, adversarial_validation=PreprocessAdversarialValidation(is_small=self.is_small))
 
     def run(self):
         features = self.load_data_frame('feature')
         adversarial_validation = self.load_data_frame('adversarial_validation')
 
-        high_score_stores = adversarial_validation[adversarial_validation['score'] > self.threshold]
-
-        # for start, end, store in high_score_stores[['start', 'end', 'id']].values:
-        #     features = features[~(features['d'].between(start, end) & features['id'].str.contains(store))]
-
-        for start, end, omit_id in high_score_stores[['start', 'end', 'id']].values:
-            features = features[~(features['d'].between(start, end) & (features['id'] == omit_id))]
-
+        features = pd.merge(features, adversarial_validation, how='left', on=['id', 'd'])
+        features = features[~(features['adversarial_score'] > self.threshold)]
+        features = features.drop('adversarial_score', axis=1)
         self.dump(features)
 
 
