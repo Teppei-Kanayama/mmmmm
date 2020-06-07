@@ -144,13 +144,13 @@ class ReshapeAdversarialValidation(gokart.TaskOnKart):
     is_small: bool = luigi.BoolParameter()
 
     def output(self):
-        return self.make_target('adversarial_validation/preprocess_result.csv')
+        return self.make_target('adversarial_validation/reshaped_result.csv')
 
     def requires(self):
         return AdversarialValidation(is_small=self.is_small)
 
     def run(self):
-        adversarial_validation = self.load_data_frame('adversarial_validation')
+        adversarial_validation = self.load_data_frame()
         output = self._run(adversarial_validation)
         self.dump(output)
 
