@@ -6,7 +6,7 @@ import luigi
 import pandas as pd
 import numpy as np
 from sklearn import metrics
-import lightgbm as lgb
+# import lightgbm as lgb
 
 from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
@@ -152,11 +152,18 @@ class ReshapeAdversarialValidation(gokart.TaskOnKart):
     def run(self):
         adversarial_validation = self.load_data_frame('adversarial_validation')
         output = self._run(adversarial_validation)
-        self.dump(adversarial_validation)
+        self.dump(output)
 
     @staticmethod
-    def _run(adversarial_validation):
-        import pdb; pdb.set_trace()
+    def _run(df):
+        days = 365
+        days_list = list(range(days))
+        for i in days_list:
+            df[i] = df['score']
+        df = df.drop(['end', 'score'], axis=1)
+        df = df.melt(id_vars=['id', 'start'], var_name='d', value_name='adversarial_score')
+        df['d'] = df['d'] + df['start']
+        return df[['id', 'd', 'adversarial_score']]
 
 
 class FilterByAdversarialValidation(gokart.TaskOnKart):

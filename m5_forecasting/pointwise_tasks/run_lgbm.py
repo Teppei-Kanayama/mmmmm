@@ -4,7 +4,7 @@ from typing import Tuple, List, Dict
 import gokart
 import luigi
 import pandas as pd
-import lightgbm as lgb
+# import lightgbm as lgb
 
 logger = getLogger(__name__)
 
