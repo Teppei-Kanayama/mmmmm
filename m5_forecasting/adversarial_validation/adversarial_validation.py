@@ -6,7 +6,7 @@ import luigi
 import pandas as pd
 import numpy as np
 from sklearn import metrics
-# import lightgbm as lgb
+import lightgbm as lgb
 
 from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
