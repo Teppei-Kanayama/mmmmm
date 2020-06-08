@@ -6,7 +6,6 @@ import luigi
 import pandas as pd
 import numpy as np
 from sklearn import metrics
-import lightgbm as lgb
 
 from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
@@ -66,6 +65,7 @@ class TrainBinaryLGBM(gokart.TaskOnKart):
 
         test_ids = data[data['d'].isin(test_days)]['id']
 
+        import lightgbm as lgb
         train_set = lgb.Dataset(X_train, y_train)
         val_set = lgb.Dataset(X_val, y_val)
         valid_sets = [train_set, val_set]

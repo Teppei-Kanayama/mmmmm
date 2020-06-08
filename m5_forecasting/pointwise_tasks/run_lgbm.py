@@ -4,7 +4,6 @@ from typing import Tuple, List, Dict
 import gokart
 import luigi
 import pandas as pd
-import lightgbm as lgb
 
 logger = getLogger(__name__)
 
@@ -37,6 +36,8 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
     def _run(data: Dict[str, pd.DataFrame], num_boost_round: int, early_stopping_rounds: int):
         feature_columns = [feature for feature in data['x_train'].columns if feature not in ['id', 'd']]
         logger.info(f'feature columns: {feature_columns}')
+
+        import lightgbm as lgb
         train_set = lgb.Dataset(data['x_train'][feature_columns], data['y_train'])
         val_set = lgb.Dataset(data['x_val'][feature_columns], data['y_val'])
 
