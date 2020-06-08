@@ -86,14 +86,14 @@ class MakeFeature(gokart.TaskOnKart):
         # del mean_encoding_feature
 
         logger.info('merge feature1 ...')
-        feature1['id'] = feature1['id'].apply(lambda x: x.split('_evaluation')[0])
+        feature1['id'] = feature1['id'].apply(lambda x: x.split('_validation')[0])
         feature1_columns = ['id', 'd', 'release']
         data = pd.merge(data, feature1[feature1_columns], on=['id', 'd'], how='inner')
         data = data.drop('release', axis=1)
         del feature1
 
         # logger.info('merge feature2 ...')
-        # feature2['id'] = feature2['id'].apply(lambda x: x.split('_evaluation')[0])
+        # feature2['id'] = feature2['id'].apply(lambda x: x.split('_validation')[0])
         # feature2['d'] = feature2['d'].apply(lambda x: int(x.split('_')[1]))
         # feature2_columns = ['id', 'd', 'price_max', 'price_min', 'price_std', 'price_mean', 'price_norm',
         #                     'price_nunique', 'item_nunique',
@@ -102,7 +102,7 @@ class MakeFeature(gokart.TaskOnKart):
         # del feature2
         #
         # logger.info('merge feature3 ...')
-        # feature3['id'] = feature3['id'].apply(lambda x: x.split('_evaluation')[0])
+        # feature3['id'] = feature3['id'].apply(lambda x: x.split('_validation')[0])
         # feature3['d'] = feature3['d'].apply(lambda x: int(x.split('_')[1]))
         # feature3_columns = ['id', 'd', 'tm_d', 'tm_w', 'tm_m', 'tm_y', 'tm_wm', 'tm_dw', 'tm_w_end']
         # data = pd.merge(data, feature3[feature3_columns], on=['id', 'd'], how='left')
