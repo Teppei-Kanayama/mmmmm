@@ -99,8 +99,8 @@ class MekeSalesFeature(gokart.TaskOnKart):
         # rolling mean
         # lags = [7, 28]
         # wins = [7, 28]
-        lags = [28 + 7 * i for i in range(16)]
-        wins = [7]
+        lags = [28 * i for i in range(1, 14)]
+        wins = [28]
         for lag in lags:
             for win in wins:
                 df[f'rolling_mean_lag{lag}_win{win}'] = cls._calculate_rolling_mean(df, lag, win)
