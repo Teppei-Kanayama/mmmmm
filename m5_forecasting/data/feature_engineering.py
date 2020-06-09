@@ -59,17 +59,17 @@ class MakeFeature(gokart.TaskOnKart):
 
     def run(self):
         data = self.load_data_frame('data')
-        feature1 = self.load('feature1')
-        feature2 = self.load('feature2')
-        feature3 = self.load('feature3')
-        mean_encoding_feature = self.load('mean_encoding_feature')
-        output = self._run(data, feature1, feature2, feature3, mean_encoding_feature)
+        # feature1 = self.load('feature1')
+        # feature2 = self.load('feature2')
+        # feature3 = self.load('feature3')
+        # mean_encoding_feature = self.load('mean_encoding_feature')
+        output = self._run(data)
         self.dump(output)
 
     @classmethod
-    def _run(cls, data, feature1, feature2, feature3, mean_encoding_feature):
+    def _run(cls, data):
         data = cls._label_encode(data)
-        data = cls._merge_outside_feature(data, feature1, feature2, feature3, mean_encoding_feature)
+        # data = cls._merge_outside_feature(data, feature1, feature2, feature3, mean_encoding_feature)
         return data
 
     @staticmethod
