@@ -89,7 +89,6 @@ class MakeFeature(gokart.TaskOnKart):
         feature1['id'] = feature1['id'].apply(lambda x: x.split('_validation')[0])
         feature1_columns = ['id', 'd', 'release']
         data = pd.merge(data, feature1[feature1_columns], on=['id', 'd'], how='left')
-        data = data.drop('release', axis=1)
         del feature1
 
         logger.info('merge feature2 ...')
