@@ -93,8 +93,9 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
         # lag
         # lags = [7, 28]
-        # for lag in lags:
-        #     df[f'lag{lag}'] = cls._calculate_lag(df, lag)
+        lags = [28 + 7 * i for i in range(5)]
+        for lag in lags:
+            df[f'lag{lag}'] = cls._calculate_lag(df, lag)
 
         # rolling mean
         # lags = [7, 28]
