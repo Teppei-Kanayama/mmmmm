@@ -108,9 +108,9 @@ class MekeSalesFeature(gokart.TaskOnKart):
                 # df[f'rolling_std_lag{lag}_win{win}'] = cls._calculate_rolling_std(df, lag, win)
 
         # shorter lag
-        df['lag7'] = cls._calculate_lag(df, 7)
-        df[f'rolling_mean_lag7_win7'] = cls._calculate_rolling_mean(df, 7, 7)
-        df[f'rolling_mean_lag7_win28'] = cls._calculate_rolling_mean(df, 7, 28)
+        # df['lag7'] = cls._calculate_lag(df, 7)
+        # df[f'rolling_mean_lag7_win7'] = cls._calculate_rolling_mean(df, 7, 7)
+        # df[f'rolling_mean_lag7_win28'] = cls._calculate_rolling_mean(df, 7, 28)
 
         # longer rolling mean
         df['rolling_mean_t60'] = cls._calculate_rolling_mean(df, 28, 60)
