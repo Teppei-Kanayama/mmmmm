@@ -53,11 +53,9 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
                       'min_data_in_leaf': min_data_in_leaf,  # TODO: 重要
                       'feature_fraction': 0.5,  # TODO: 重要
                       'max_bin': 100,
-                      'n_estimators': 1400,  # TODO: CVで決める。early stoppingを使わない場合はこれが重要になる。 1400 -> 2500
+                      'n_estimators': 1400,  # TODO: CVで決める。early stoppingを使わない場合はこれが重要になる。 1400 -> 2500,
+                      'max_depth': 5
                       }
-
-        # lgb_params = {"objective": "poisson", "metric": "rmse", "force_row_wise": True, "learning_rate": 0.075,
-        #               "sub_row": 0.75, "bagging_freq": 1, "lambda_l2": 0.1, 'verbosity': 1, 'num_iterations': 2500, }
 
         valid_sets = [train_set, val_set] if not data['x_val'].empty else None
         model = lgb.train(lgb_params, train_set, num_boost_round=num_boost_round, early_stopping_rounds=early_stopping_rounds,
