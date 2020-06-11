@@ -39,7 +39,6 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
 
         import lightgbm as lgb
         train_set = lgb.Dataset(data['x_train'][feature_columns], data['y_train'])
-        val_set = lgb.Dataset(data['x_val'][feature_columns], data['y_val'])
 
         min_data_in_leaf = 2 ** 12 - 1 if data['x_train']['id'].nunique() > 10 else None
         lgb_params = {'boosting_type': 'gbdt',   # 固定
@@ -59,9 +58,7 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
         # lgb_params = {"objective": "poisson", "metric": "rmse", "force_row_wise": True, "learning_rate": 0.075,
         #               "sub_row": 0.75, "bagging_freq": 1, "lambda_l2": 0.1, 'verbosity': 1, 'num_iterations': 2500, }
 
-        valid_sets = [train_set, val_set] if not data['x_val'].empty else None
-        model = lgb.train(lgb_params, train_set, num_boost_round=num_boost_round, early_stopping_rounds=early_stopping_rounds,
-                          valid_sets=valid_sets, verbose_eval=100)
+        model = lgb.train(lgb_params, train_set, valid_sets=None, verbose_eval=100)
 
         feature_importance = pd.DataFrame(
             dict(name=feature_columns, imp=model.feature_importance(importance_type='gain'))).sort_values(by='imp', ascending=False)

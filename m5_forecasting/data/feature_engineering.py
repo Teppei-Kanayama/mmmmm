@@ -50,12 +50,13 @@ class MakeFeature(gokart.TaskOnKart):
     is_small: bool = luigi.BoolParameter()
 
     def requires(self):
-        feature1_task = LoadInputData(filename='grid_part_1.pkl')
-        feature2_task = LoadInputData(filename='grid_part_2.pkl')
-        feature3_task = LoadInputData(filename='grid_part_3.pkl')
-        mean_encoding_feature_task = LoadInputData(filename='small_mean_encoding_feature.pkl')
-        return dict(data=self.merged_data_task, feature1=feature1_task, feature2=feature2_task, feature3=feature3_task,
-                    mean_encoding_feature=mean_encoding_feature_task)
+        # feature1_task = LoadInputData(filename='grid_part_1.pkl')
+        # feature2_task = LoadInputData(filename='grid_part_2.pkl')
+        # feature3_task = LoadInputData(filename='grid_part_3.pkl')
+        # mean_encoding_feature_task = LoadInputData(filename='small_mean_encoding_feature.pkl')
+        # return dict(data=self.merged_data_task, feature1=feature1_task, feature2=feature2_task, feature3=feature3_task,
+        #             mean_encoding_feature=mean_encoding_feature_task)
+        return dict(data=self.merged_data_task)
 
     def run(self):
         data = self.load_data_frame('data')
