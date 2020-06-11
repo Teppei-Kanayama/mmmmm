@@ -103,5 +103,7 @@ class PredictPointwise(gokart.TaskOnKart):
     def _run(model, feature_columns: List[str], feature: pd.DataFrame, sales, predict_from_date, predict_to_date) -> pd.DataFrame:
         test = feature[(predict_from_date <= feature['d']) & (feature['d'] < predict_to_date)]
         pred = model.predict(test[feature_columns])
-        sales.loc[sales[(sales['id'].isin(test['id'])) & (sales['d'].isin(test['d']))].index, 'demand'] = pred
+        test['pred'] = pred
+        test['predicted_demand'] = test['pred'] / test['sell_price']
+        sales.loc[sales[(sales['id'].isin(test['id'])) & (sales['d'].isin(test['d']))].index, 'demand'] = test['predicted_demand'].values
         return sales[(predict_from_date <= sales['d']) & (sales['d'] < predict_to_date)]
