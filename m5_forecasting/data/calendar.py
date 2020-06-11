@@ -8,6 +8,20 @@ from m5_forecasting.data.load import LoadInputData
 
 logger = getLogger(__name__)
 
+# original columns
+
+# wm_yr_wk: 週のIDで、全データを通して異なる11101~11621の通し番号。
+# wday: 曜日ID。日曜日が0
+# month: 1から12まで
+# year: 2011~2016
+# d: データ開始日から終了日までの通し番号。1~1969
+
+# artificial columns
+
+# week_of_year: 1年間における第何週か。1~52くらい。
+# quarter: 日付の四半期。1~4。
+# day: 日にち。1~31。
+
 
 class PreprocessCalendar(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
@@ -22,7 +36,6 @@ class PreprocessCalendar(gokart.TaskOnKart):
 
     @staticmethod
     def _run(df: pd.DataFrame) -> pd.DataFrame:
-        # 'd_100' などの日付を100に変換する
         df = df.assign(d=df['d'].str[2:].astype(int))
 
         # 'event_name_1', 'event_type_1'を label encodeする
@@ -49,16 +62,3 @@ class PreprocessCalendar(gokart.TaskOnKart):
         df = df.drop(["date", "weekday", "event_name_2", "event_type_2"], axis=1)
         return df
 
-        # original columns
-
-        # wm_yr_wk: 週のIDで、全データを通して異なる11101~11621の通し番号。
-        # wday: 曜日ID。日曜日が0
-        # month: 1から12まで
-        # year: 2011~2016
-        # d: データ開始日から終了日までの通し番号。1~1969
-
-        # artificial columns
-
-        # week_of_year: 1年間における第何週か。1~52くらい。
-        # quarter: 日付の四半期。1~4。
-        # day: 日にち。1~31。

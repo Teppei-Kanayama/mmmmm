@@ -85,7 +85,5 @@ def main():
     print(score_df)
 
 
-
-
 if __name__ == '__main__':
     main()
