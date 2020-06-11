@@ -1,8 +1,7 @@
 from logging import getLogger
-from typing import Tuple, List, Dict
+from typing import Dict
 
 import gokart
-import luigi
 import pandas as pd
 
 logger = getLogger(__name__)
@@ -10,9 +9,6 @@ logger = getLogger(__name__)
 
 class TrainPointwiseLGBM(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
-
-    num_boost_round: int = luigi.IntParameter()
-    early_stopping_rounds: int = luigi.IntParameter(default=None)
 
     feature_task = gokart.TaskInstanceParameter()
 
@@ -27,13 +23,13 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
 
     def run(self):
         data = self.load()
-        model, feature_columns, feature_importance = self._run(data, self.num_boost_round, self.early_stopping_rounds)
+        model, feature_columns, feature_importance = self._run(data)
         self.dump(model, 'model')
         self.dump(feature_columns, 'feature_columns')
         self.dump(feature_importance, 'feature_importance')
 
     @staticmethod
-    def _run(data: Dict[str, pd.DataFrame], num_boost_round: int, early_stopping_rounds: int):
+    def _run(data: Dict[str, pd.DataFrame]):
         feature_columns = [feature for feature in data['x_train'].columns if feature not in ['id', 'd']]
         logger.info(f'feature columns: {feature_columns}')
 

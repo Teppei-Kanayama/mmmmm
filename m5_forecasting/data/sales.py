@@ -75,13 +75,6 @@ class MekeSalesFeature(gokart.TaskOnKart):
         if from_date and to_date:
             df = df[(from_date - buffer <= df['d']) & (df['d'] < to_date)]
 
-        # grouped lag
-        # lags = [7, 14]
-        # levels = ['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id']
-        # for lag in lags:
-        #     for level in levels:
-        #         df[f'grouped_lag_{level}_lag{lag}'] = cls._calculate_grouped_lag(df, level, lag)
-
         # grouped rolling mean
         # lags = [7, 28]
         # wins = [7, 28]
@@ -92,14 +85,11 @@ class MekeSalesFeature(gokart.TaskOnKart):
         #             df[f'grouped_lag_{level}_lag{lag}_win{win}'] = cls._calculate_grouped_rolling_mean(df, level, lag, win)
 
         # lag
-        # lags = [7, 28]
         lags = [28 + 7 * i for i in range(5)]
         for lag in lags:
             df[f'lag{lag}'] = cls._calculate_lag(df, lag)
 
         # rolling mean
-        # lags = [7, 28]
-        # wins = [7, 28]
         lags = [28 * i for i in range(1, 14)]
         wins = [28]
         for lag in lags:
@@ -109,7 +99,6 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
         # shorter lag
         # df['lag7'] = cls._calculate_lag(df, 7)
-        # df[f'rolling_mean_lag7_win7'] = cls._calculate_rolling_mean(df, 7, 7)
         # df[f'rolling_mean_lag7_win28'] = cls._calculate_rolling_mean(df, 7, 28)
 
         # longer rolling mean
