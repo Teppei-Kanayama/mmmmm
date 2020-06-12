@@ -8,6 +8,7 @@ import pandas as pd
 logger = getLogger(__name__)
 
 
+# TODO: そもそもこの関数いらない説（validationがないので）
 class TrainValidationSplit(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
@@ -25,9 +26,8 @@ class TrainValidationSplit(gokart.TaskOnKart):
 
     @staticmethod
     def _run(data: pd.DataFrame, train_to_date: int) -> Tuple[pd.DataFrame, ...]:
-        data = data[data['d'] < train_to_date]
-        data['target'] = data['demand'] * data['sell_price']
-        data = data.dropna(subset={'target'})
-        y_train = data['target']
-        x_train = data.drop({'demand', 'target'}, axis=1)
+        data = data[data['d'] < train_to_date]  # TODO: move!
+        data = data.dropna(subset={'sell_price'})  # TODO: move!
+        y_train = data['demand']
+        x_train = data.drop({'demand'}, axis=1)
         return x_train, y_train
