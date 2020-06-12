@@ -99,7 +99,10 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
         # shorter lag
         # df['lag7'] = cls._calculate_lag(df, 7)
-        # df[f'rolling_mean_lag7_win28'] = cls._calculate_rolling_mean(df, 7, 28)
+        df['lag_short_mean'] = cls._calculate_short_lag(df, stat='mean')
+        df['lag_short_median'] = cls._calculate_short_lag(df, stat='median')
+        df['lag_short_std'] = cls._calculate_short_lag(df, stat='std')
+        df[f'rolling_mean_lag7_win28'] = cls._calculate_rolling_mean(df, 7, 28)
 
         # longer rolling mean
         df['rolling_mean_t60'] = cls._calculate_rolling_mean(df, 28, 60)
@@ -117,6 +120,21 @@ class MekeSalesFeature(gokart.TaskOnKart):
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
         df = df[(df.d >= 1942) | (pd.notna(df.rolling_mean_t180))]
         return df
+
+    @classmethod
+    def _calculate_short_lag(cls, df: pd.DataFrame, stat: str) -> pd.Series:
+        tmp = pd.DataFrame()
+        tmp['s1'] = cls._calculate_lag(df, 7)
+        tmp['s2'] = cls._calculate_lag(df, 14)
+        tmp['s3'] = cls._calculate_lag(df, 21)
+        tmp['s4'] = cls._calculate_lag(df, 28)
+        if stat == 'mean':
+            return tmp.mean(axis=1)
+        if stat == 'median':
+            return tmp.median(axis=1)
+        if stat == 'std':
+            return tmp.std(axis=1)
+        raise Exception('stat is invalid!')
 
     @staticmethod
     def _calculate_lag(df: pd.DataFrame, lag: int, target_column: str = 'demand') -> pd.Series:
