@@ -27,7 +27,7 @@ class TrainValidationSplit(gokart.TaskOnKart):
     @staticmethod
     def _run(data: pd.DataFrame, train_to_date: int) -> Tuple[pd.DataFrame, ...]:
         data = data[data['d'] < train_to_date]  # TODO: move!
-        data = data.dropna(subset={'sell_price'})  # TODO: move!
+        # data = data.dropna(subset={'sell_price'})  # TODO: move!
         y_train = data['demand']
         x_train = data.drop({'demand'}, axis=1)
         return x_train, y_train
