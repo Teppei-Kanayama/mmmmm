@@ -12,7 +12,8 @@ logger = getLogger(__name__)
 class PreprocessSales(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    drop_old_data_days: int = luigi.IntParameter(default=None)
+    from_date: int = luigi.IntParameter()
+    to_date: int = luigi.IntParameter()
     is_small: bool = luigi.BoolParameter()
 
     def requires(self):
@@ -21,21 +22,19 @@ class PreprocessSales(gokart.TaskOnKart):
     def run(self):
         required_columns = {'id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'} | set([f'd_{d}' for d in range(1, 1942)])
         data = self.load_data_frame(required_columns=required_columns)
-        output = self._run(data, self.drop_old_data_days, self.is_small)
+        output = self._run(data, self.from_date, self.to_date, self.is_small)
         self.dump(output)
 
     @staticmethod
-    def _run(df: pd.DataFrame, drop_old_data_days: int, is_small: bool) -> pd.DataFrame:
+    def _run(df: pd.DataFrame, from_date: int, to_date: int, is_small: bool) -> pd.DataFrame:
         if is_small:
             df = df.iloc[:3]
-        else:
-            df = df.drop(["d_" + str(i + 1) for i in range(drop_old_data_days - 1)], axis=1)
+        df = df.drop(["d_" + str(i + 1) for i in range(from_date - 1)], axis=1)
         df['id'] = df['id'].str.replace('_evaluation', '')
         df = df.reindex(columns=df.columns.tolist() + ["d_" + str(1942 + i) for i in range(28)])
-
-        df = df.melt(id_vars=["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"], var_name='d',
-                     value_name='demand')
+        df = df.melt(id_vars=["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"], var_name='d', value_name='demand')
         df['d'] = df['d'].str[2:].astype('int64')
+        df = df[df['d'] < to_date]
         return df
 
 

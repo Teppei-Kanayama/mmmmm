@@ -27,13 +27,14 @@ class TrainPointwiseModel(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     is_small: bool = luigi.BoolParameter()
+    train_from_date: int = luigi.IntParameter()
     train_to_date: int = luigi.IntParameter()
     filter_by_adversarial_validation: bool = luigi.BoolParameter()
 
     def requires(self):
         calendar_data_task = PreprocessCalendar()
         selling_price_data_task = PreprocessSellingPrice()
-        sales_data_task = MekeSalesFeature(sales_data_task=PreprocessSales(is_small=self.is_small),
+        sales_data_task = MekeSalesFeature(sales_data_task=PreprocessSales(is_small=self.is_small, from_date=self.train_from_date, to_date=self.train_to_date),
                                            predicted_sales_data_task=DummyPredictTask())
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
