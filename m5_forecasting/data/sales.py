@@ -49,8 +49,8 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
     # 特徴量を作る必要がある対象期間
     # Noneの場合は全ての期間に対して特徴量を作る
-    from_date: int = luigi.IntParameter(default=None)
-    to_date: int = luigi.IntParameter(default=None)
+    make_feature_from_date: int = luigi.IntParameter(default=None)
+    make_feature_to_date: int = luigi.IntParameter(default=None)
 
     def requires(self):
         return dict(sales=self.sales_data_task, predicted_sales=self.predicted_sales_data_task)
@@ -62,17 +62,17 @@ class MekeSalesFeature(gokart.TaskOnKart):
             sales.loc[sales[(sales['id'].isin(predicted_sales['id']))
                             & (sales['d'].isin(predicted_sales['d']))].index, 'demand'] \
                 = predicted_sales['demand'].values
-        output = self._run(sales, self.from_date, self.to_date)
+        output = self._run(sales, self.make_feature_from_date, self.make_feature_to_date)
         self.dump(output)
 
     @classmethod
-    def _run(cls, df, from_date, to_date):
+    def _run(cls, df, make_feature_from_date, make_feature_to_date):
         # from_date - bufferからto_dateまでに限定して特徴量を作ることで計算量を削減する
         # 過去のsalesデータを使って特徴量を作るためにbufferを用意している
         original_columns = df.columns
-        buffer = 28 + 180  # TODO: decide buffer automatically
-        if from_date and to_date:
-            df = df[(from_date - buffer <= df['d']) & (df['d'] < to_date)]
+        # buffer = 28 + 180
+        # if make_feature_from_date and make_feature_to_date:
+        #     df = df[(make_feature_from_date - buffer <= df['d']) & (df['d'] < make_feature_to_date)]
 
         # grouped rolling mean
         # lags = [7, 28]
@@ -121,7 +121,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
         df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
 
         # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
-        df = df[(df.d >= 1942) | (pd.notna(df.rolling_mean_t180))]
+        # df = df[(df.d >= 1942) | (pd.notna(df.rolling_mean_t180))]
         return df
 
     @classmethod
