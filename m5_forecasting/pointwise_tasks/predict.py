@@ -80,7 +80,9 @@ class PredictPointwise(gokart.TaskOnKart):
         selling_price_data_task = PreprocessSellingPrice()
         original_sales_data_task = PreprocessSales(from_date=self.train_to_date - 180, to_date=self.prediction_start_date, is_small=self.is_small)
         predicted_sales_data_task = ConcatPredictionData(from_date=self.prediction_start_date, to_date=self.predict_from_date, interval=self.interval)
-        sales_feature_task = MekeSalesFeature(sales_data_task=original_sales_data_task, predicted_sales_data_task=predicted_sales_data_task)
+        sales_feature_task = MekeSalesFeature(sales_data_task=original_sales_data_task,
+                                              predicted_sales_data_task=predicted_sales_data_task,
+                                              make_feature_to_date=self.predict_to_date)
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_feature_task)

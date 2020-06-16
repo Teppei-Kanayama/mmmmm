@@ -3,8 +3,10 @@ from logging import getLogger
 import luigi
 import pandas as pd
 import gokart
+import numpy as np
 
 from m5_forecasting.data.load import LoadInputData
+from m5_forecasting.utils.pandas_utils import cross_join
 
 logger = getLogger(__name__)
 
@@ -31,7 +33,7 @@ class PreprocessSales(gokart.TaskOnKart):
             df = df.iloc[:3]
         df = df.drop(["d_" + str(i + 1) for i in range(from_date - 1)], axis=1)
         df['id'] = df['id'].str.replace('_evaluation', '')
-        df = df.reindex(columns=df.columns.tolist() + ["d_" + str(1942 + i) for i in range(28)])
+        # df = df.reindex(columns=df.columns.tolist() + ["d_" + str(1942 + i) for i in range(28)])
         df = df.melt(id_vars=["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"], var_name='d', value_name='demand')
         df['d'] = df['d'].str[2:].astype('int64')
         df = df[df['d'] < to_date]
@@ -43,11 +45,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
     sales_data_task = gokart.TaskInstanceParameter()  # 真のsalesデータ
     predicted_sales_data_task = gokart.TaskInstanceParameter()  # 予測されたsalesデータ
-
-    # 特徴量を作る必要がある対象期間
-    # Noneの場合は全ての期間に対して特徴量を作る
-    # make_feature_from_date: int = luigi.IntParameter(default=None)
-    # make_feature_to_date: int = luigi.IntParameter(default=None)
+    make_feature_to_date: int = luigi.IntParameter(default=None)
 
     def requires(self):
         return dict(sales=self.sales_data_task, predicted_sales=self.predicted_sales_data_task)
@@ -57,18 +55,21 @@ class MekeSalesFeature(gokart.TaskOnKart):
         predicted_sales = self.load_data_frame('predicted_sales')
 
         sales = pd.concat([sales, predicted_sales]).reset_index(drop=True)
-        output = self._run(sales)
+        output = self._run(sales, self.make_feature_to_date)
         self.dump(output)
 
     @classmethod
-    def _run(cls, df):
-        # from_date - bufferからto_dateまでに限定して特徴量を作ることで計算量を削減する
-        # 過去のsalesデータを使って特徴量を作るためにbufferを用意している
+    def _run(cls, df: pd.DataFrame, make_feature_to_date: int) -> pd.DataFrame:
         original_columns = df.columns
-        # buffer = 28 + 180
-        # if make_feature_from_date and make_feature_to_date:
-        #     df = df[(make_feature_from_date - buffer <= df['d']) & (df['d'] < make_feature_to_date)]
+        future_sales_df = cls._make_future_sales(df, from_date=df['d'].max() + 1, to_date=make_feature_to_date)
+        df = pd.concat([df, future_sales_df])
+        df = cls._make_feature(df)
+        to_float32 = list(set(df.columns) - set(original_columns))
+        df[to_float32] = df[to_float32].astype("float32")
+        return df
 
+    @classmethod
+    def _make_feature(cls, df):
         # grouped rolling mean
         # lags = [7, 28]
         # wins = [7, 28]
@@ -107,17 +108,19 @@ class MekeSalesFeature(gokart.TaskOnKart):
         df['rolling_mean_t90'] = cls._calculate_rolling_mean(df, 28, 90)
         df['rolling_mean_t180'] = cls._calculate_rolling_mean(df, 28, 180)
 
-        # 新たに作成した特徴量を全てfloat32に変換
-        to_float32 = list(set(df.columns) - set(original_columns))
-        df[to_float32] = df[to_float32].astype("float32")
-
         # sold out
         win = 60
         df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
 
-        # Remove rows with NAs except for submission rows. rolling_mean_t180 was selected as it produces most missings
-        # df = df[(df.d >= 1942) | (pd.notna(df.rolling_mean_t180))]
         return df
+
+    @staticmethod
+    def _make_future_sales(df: pd.DataFrame, from_date: int, to_date: int) -> pd.DataFrame:
+        base_df = df[['id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id']].drop_duplicates()
+        d_df = pd.DataFrame(dict(d=np.arange(from_date, to_date)))
+        future_sales_df = cross_join(base_df, d_df)
+        future_sales_df['demand'] = None
+        return future_sales_df
 
     @classmethod
     def _calculate_short_lag(cls, df: pd.DataFrame, stat: str) -> pd.Series:
