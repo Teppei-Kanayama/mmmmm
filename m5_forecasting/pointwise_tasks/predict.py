@@ -100,12 +100,7 @@ class PredictPointwise(gokart.TaskOnKart):
 
     @staticmethod
     def _run(model, feature_columns: List[str], feature: pd.DataFrame, sales, predict_from_date, predict_to_date) -> pd.DataFrame:
-        import pdb; pdb.set_trace()
-
         test = feature[(predict_from_date <= feature['d']) & (feature['d'] < predict_to_date)]
-        pred = model.predict(test[feature_columns])
-        test['pred'] = pred
-
-        # TODO: ここよくわかんないけどなんとかならない？
-        sales.loc[sales[(sales['id'].isin(test['id'])) & (sales['d'].isin(test['d']))].index, 'demand'] = test['pred'].values
-        return sales[(predict_from_date <= sales['d']) & (sales['d'] < predict_to_date)]
+        test['demand'] = model.predict(test[feature_columns])
+        base_df = sales.drop_duplicates(subset={'id'}).drop(['d', 'demand'], axis=1)
+        return pd.merge(base_df, test[['id', 'd', 'demand']])
