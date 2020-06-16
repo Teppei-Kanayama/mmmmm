@@ -78,29 +78,32 @@ class PredictPointwise(gokart.TaskOnKart):
 
         calendar_data_task = PreprocessCalendar()
         selling_price_data_task = PreprocessSellingPrice()
-        sales_data_task = PreprocessSales(from_date=self.predict_from_date - 180, to_date=self.predict_from_date, is_small=self.is_small)
+        original_sales_data_task = PreprocessSales(from_date=self.train_to_date - 180, to_date=self.prediction_start_date, is_small=self.is_small)
         predicted_sales_data_task = ConcatPredictionData(from_date=self.prediction_start_date, to_date=self.predict_from_date, interval=self.interval)
-        sales_feature_task = MekeSalesFeature(sales_data_task=sales_data_task, predicted_sales_data_task=predicted_sales_data_task)
+        sales_feature_task = MekeSalesFeature(sales_data_task=original_sales_data_task, predicted_sales_data_task=predicted_sales_data_task)
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_feature_task)
         feature_task = MakeFeature(merged_data_task=merged_data_task)
 
-        return dict(model=trained_model_task, sales=sales_data_task, feature=feature_task)
+        return dict(model=trained_model_task, sales=original_sales_data_task, feature=feature_task)
 
     def run(self):
         model = self.load('model')['model']
         feature_columns = self.load('model')['feature_columns']
         feature = self.load_data_frame('feature')
         sales = self.load_data_frame('sales')
-
         output = self._run(model, feature_columns, feature, sales, self.predict_from_date, self.predict_to_date)
         self.dump(output)
 
     @staticmethod
     def _run(model, feature_columns: List[str], feature: pd.DataFrame, sales, predict_from_date, predict_to_date) -> pd.DataFrame:
+        import pdb; pdb.set_trace()
+
         test = feature[(predict_from_date <= feature['d']) & (feature['d'] < predict_to_date)]
         pred = model.predict(test[feature_columns])
         test['pred'] = pred
+
+        # TODO: ここよくわかんないけどなんとかならない？
         sales.loc[sales[(sales['id'].isin(test['id'])) & (sales['d'].isin(test['d']))].index, 'demand'] = test['pred'].values
         return sales[(predict_from_date <= sales['d']) & (sales['d'] < predict_to_date)]

@@ -41,16 +41,13 @@ class PreprocessSales(gokart.TaskOnKart):
 class MekeSalesFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    # 特徴量作成のための元データ（真の値）
-    sales_data_task = gokart.TaskInstanceParameter()
-
-    # 特徴量作成のための元データ（予測値を真の値と見なして補う）
-    predicted_sales_data_task = gokart.TaskInstanceParameter()
+    sales_data_task = gokart.TaskInstanceParameter()  # 真のsalesデータ
+    predicted_sales_data_task = gokart.TaskInstanceParameter()  # 予測されたsalesデータ
 
     # 特徴量を作る必要がある対象期間
     # Noneの場合は全ての期間に対して特徴量を作る
-    make_feature_from_date: int = luigi.IntParameter(default=None)
-    make_feature_to_date: int = luigi.IntParameter(default=None)
+    # make_feature_from_date: int = luigi.IntParameter(default=None)
+    # make_feature_to_date: int = luigi.IntParameter(default=None)
 
     def requires(self):
         return dict(sales=self.sales_data_task, predicted_sales=self.predicted_sales_data_task)
@@ -58,15 +55,13 @@ class MekeSalesFeature(gokart.TaskOnKart):
     def run(self):
         sales = self.load_data_frame('sales')
         predicted_sales = self.load_data_frame('predicted_sales')
-        if not predicted_sales.empty:
-            sales.loc[sales[(sales['id'].isin(predicted_sales['id']))
-                            & (sales['d'].isin(predicted_sales['d']))].index, 'demand'] \
-                = predicted_sales['demand'].values
-        output = self._run(sales, self.make_feature_from_date, self.make_feature_to_date)
+
+        sales = pd.concat([sales, predicted_sales]).reset_index(drop=True)
+        output = self._run(sales)
         self.dump(output)
 
     @classmethod
-    def _run(cls, df, make_feature_from_date, make_feature_to_date):
+    def _run(cls, df):
         # from_date - bufferからto_dateまでに限定して特徴量を作ることで計算量を削減する
         # 過去のsalesデータを使って特徴量を作るためにbufferを用意している
         original_columns = df.columns
