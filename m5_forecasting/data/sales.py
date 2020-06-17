@@ -109,8 +109,8 @@ class MekeSalesFeature(gokart.TaskOnKart):
         df['rolling_mean_t180'] = cls._calculate_rolling_mean(df, 28, 180)
 
         # sold out
-        win = 60
-        df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
+        # win = 60
+        # df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
 
         return df
 
