@@ -9,7 +9,6 @@ from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
 from m5_forecasting.data.sales import PreprocessSales, MekeSalesFeature
 from m5_forecasting.data.selling_price import PreprocessSellingPrice
-from m5_forecasting.data.train_validation_split import TrainValidationSplit
 from m5_forecasting.pointwise_tasks.run_lgbm import TrainPointwiseLGBM
 
 
@@ -41,11 +40,11 @@ class TrainPointwiseModel(gokart.TaskOnKart):
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_data_task)
         if self.filter_by_adversarial_validation:
-            feature_task = FilterByAdversarialValidation(feature_task=MakeFeature(merged_data_task=merged_data_task), is_small=self.is_small)
+            feature_task = FilterByAdversarialValidation(feature_task=MakeFeature(merged_data_task=merged_data_task, is_train=True), is_small=self.is_small)
         else:
-            feature_task = MakeFeature(merged_data_task=merged_data_task)
+            feature_task = MakeFeature(merged_data_task=merged_data_task, is_train=True)
 
-        model_task = TrainPointwiseLGBM(feature_task=TrainValidationSplit(data_task=feature_task, train_to_date=self.train_to_date))
+        model_task = TrainPointwiseLGBM(feature_task=feature_task)
         return model_task
 
     def output(self):

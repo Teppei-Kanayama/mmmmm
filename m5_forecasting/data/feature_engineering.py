@@ -47,6 +47,7 @@ class MakeFeature(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     merged_data_task = gokart.TaskInstanceParameter()
+    is_train: bool = luigi.BoolParameter()
     is_small: bool = luigi.BoolParameter()
 
     def requires(self):
@@ -64,13 +65,14 @@ class MakeFeature(gokart.TaskOnKart):
         # feature2 = self.load('feature2')
         # feature3 = self.load('feature3')
         # mean_encoding_feature = self.load('mean_encoding_feature')
-        output = self._run(data)
+        output = self._run(data, self.is_train)
         self.dump(output)
 
     @classmethod
-    def _run(cls, data):
+    def _run(cls, data, is_train: bool):
         data = cls._label_encode(data)
         # data = cls._merge_outside_feature(data, feature1, feature2, feature3, mean_encoding_feature)
+        data = data.dropna(subset={'sell_price'}) if is_train else data
         return data
 
     @staticmethod

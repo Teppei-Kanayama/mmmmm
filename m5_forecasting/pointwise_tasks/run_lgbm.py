@@ -22,21 +22,24 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
         return dict(model=model, feature_columns=feature_columns, feature_importance=feature_importance)
 
     def run(self):
-        data = self.load()
+        data = self.load_data_frame()
         model, feature_columns, feature_importance = self._run(data)
         self.dump(model, 'model')
         self.dump(feature_columns, 'feature_columns')
         self.dump(feature_importance, 'feature_importance')
 
     @staticmethod
-    def _run(data: Dict[str, pd.DataFrame]):
-        feature_columns = [feature for feature in data['x_train'].columns if feature not in ['id', 'd']]
+    def _run(data: pd.DataFrame):
+        y_train = data['demand']
+        x_train = data.drop({'demand'}, axis=1)
+
+        feature_columns = [feature for feature in x_train.columns if feature not in ['id', 'd']]
         logger.info(f'feature columns: {feature_columns}')
 
         import lightgbm as lgb
-        train_set = lgb.Dataset(data['x_train'][feature_columns], data['y_train'])
+        train_set = lgb.Dataset(x_train[feature_columns], y_train)
 
-        min_data_in_leaf = 2 ** 12 - 1 if data['x_train']['id'].nunique() > 10 else None
+        min_data_in_leaf = 2 ** 12 - 1 if x_train['id'].nunique() > 10 else None
         lgb_params = {'boosting_type': 'gbdt',   # 固定
                       'objective': 'tweedie',
                       'tweedie_variance_power': 1.1,   # TODO: CVで決める
