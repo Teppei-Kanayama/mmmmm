@@ -47,12 +47,12 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
                       'subsample': 0.5,  # TODO: 重要, bagging_fractionと同じ。
                       'subsample_freq': 1,  # TODO: CVで決める bagging_freqと同じ。
                       'learning_rate': 0.03,  # あとで小さくする。 0.1 -> 0.03
-                      'num_leaves': 2 ** 11 - 1,
+                      'num_leaves': 2 ** 12 - 1,
                       'min_data_in_leaf': min_data_in_leaf,  # TODO: 重要
                       'feature_fraction': 0.5,  # TODO: 重要
                       'max_bin': 100,
                       'n_estimators': 1400,  # TODO: CVで決める。early stoppingを使わない場合はこれが重要になる。 1400 -> 2500,
-                      'max_depth': 30
+                      'max_depth': 30  # fix
                       }
 
         model = lgb.train(lgb_params, train_set, valid_sets=None, verbose_eval=100)
