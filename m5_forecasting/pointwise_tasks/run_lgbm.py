@@ -52,7 +52,7 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
                       'feature_fraction': 0.5,  # TODO: 重要
                       'max_bin': 100,
                       'n_estimators': 1400,  # TODO: CVで決める。early stoppingを使わない場合はこれが重要になる。 1400 -> 2500,
-                      'max_depth': 24
+                      'max_depth': 28
                       }
 
         model = lgb.train(lgb_params, train_set, valid_sets=None, verbose_eval=100)
