@@ -81,8 +81,8 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
         # lag
         # lags = [28 + 7 * i for i in range(5)]
-        # lags = [7, 28]
-        lags = [28]
+        lags = [7, 28]
+        # lags = [28]
         for lag in lags:
             df[f'lag{lag}'] = cls._calculate_lag(df, lag)
 
