@@ -4,6 +4,8 @@ from typing import Dict
 import gokart
 import pandas as pd
 
+from m5_forecasting.data.load import LoadInputData
+
 logger = getLogger(__name__)
 
 
@@ -13,7 +15,8 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
     feature_task = gokart.TaskInstanceParameter()
 
     def requires(self):
-        return self.feature_task
+        rmsse_weight_task = LoadInputData(filename='weights_validation.csv')
+        return dict(feature=self.feature_task, weight=rmsse_weight_task)
 
     def output(self):
         model = self.make_target(relative_file_path='model/lgb.pkl')
@@ -22,22 +25,29 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
         return dict(model=model, feature_columns=feature_columns, feature_importance=feature_importance)
 
     def run(self):
-        data = self.load_data_frame()
-        model, feature_columns, feature_importance = self._run(data)
+        data = self.load_data_frame('feature')
+        weight = self.load_data_frame('weight')
+        model, feature_columns, feature_importance = self._run(data, weight)
         self.dump(model, 'model')
         self.dump(feature_columns, 'feature_columns')
         self.dump(feature_importance, 'feature_importance')
 
     @staticmethod
-    def _run(data: pd.DataFrame):
+    def _run(data: pd.DataFrame, weight: pd.DataFrame):
+        weight = weight[weight['Level_id'] == 'Level12']
+        weight['id'] = weight['Agg_Level_1'] + '_' + weight['Agg_Level_2']
+        weight = weight[['id', 'Weight']]
+        data = pd.merge(data, weight)
+
         y_train = data['demand']
-        x_train = data.drop({'demand'}, axis=1)
+        w_train = data['Weight']
+        x_train = data.drop({'demand', 'Weight'}, axis=1)
 
         feature_columns = [feature for feature in x_train.columns if feature not in ['id', 'd']]
         logger.info(f'feature columns: {feature_columns}')
 
         import lightgbm as lgb
-        train_set = lgb.Dataset(x_train[feature_columns], y_train)
+        train_set = lgb.Dataset(x_train[feature_columns], y_train, weight=w_train)
 
         min_data_in_leaf = 2 ** 12 - 1 if x_train['id'].nunique() > 10 else None
         lgb_params = {'boosting_type': 'gbdt',   # 固定
