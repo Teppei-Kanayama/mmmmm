@@ -3,6 +3,7 @@ from typing import Dict
 
 import gokart
 import pandas as pd
+import numpy as np
 
 from m5_forecasting.data.load import LoadInputData
 
@@ -37,6 +38,10 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
         weight = weight[weight['Level_id'] == 'Level12']
         weight['id'] = weight['Agg_Level_1'] + '_' + weight['Agg_Level_2']
         weight = weight[['id', 'Weight']]
+        weight.loc[weight['Weight'] == 0] = weight[weight['Weight'] != 0]['Weight'].min()
+        weight['Weight'] *= 100000000
+        weight['Weight'] = np.log(weight['Weight'])
+
         data = pd.merge(data, weight)
 
         y_train = data['demand']
