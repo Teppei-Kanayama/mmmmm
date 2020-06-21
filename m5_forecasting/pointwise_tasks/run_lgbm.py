@@ -41,8 +41,11 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
         weight.loc[weight['Weight'] == 0] = weight[weight['Weight'] != 0]['Weight'].min()
         weight['Weight'] *= 100000000
         weight['Weight'] = np.log(weight['Weight'])
+        weight['Weight'] = 1.0
 
+        logger.info(data.shape)
         data = pd.merge(data, weight)
+        logger.info(data.shape)
 
         y_train = data['demand']
         w_train = data['Weight']
