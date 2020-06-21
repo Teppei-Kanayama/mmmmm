@@ -39,11 +39,7 @@ class TrainPointwiseModel(gokart.TaskOnKart):
         merged_data_task = MergeData(calendar_data_task=calendar_data_task,
                                      selling_price_data_task=selling_price_data_task,
                                      sales_data_task=sales_data_task)
-        if self.filter_by_adversarial_validation:
-            feature_task = FilterByAdversarialValidation(feature_task=MakeFeature(merged_data_task=merged_data_task, is_train=True), is_small=self.is_small)
-        else:
-            feature_task = MakeFeature(merged_data_task=merged_data_task, is_train=True)
-
+        feature_task = MakeFeature(merged_data_task=merged_data_task, is_train=True)
         model_task = TrainPointwiseLGBM(feature_task=feature_task)
         return model_task
 
