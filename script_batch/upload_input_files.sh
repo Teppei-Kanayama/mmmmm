@@ -2,7 +2,8 @@
 
 set -euC
 
-aws s3 cp resources/input/sales_train_evaluation.csv s3://kaggle-m5-filestore/input/
+aws s3 cp resources/input/adversarial_weight.csv s3://kaggle-m5-filestore/input/
+#aws s3 cp resources/input/sales_train_evaluation.csv s3://kaggle-m5-filestore/input/
 #aws s3 cp resources/input/small_mean_encoding_feature.pkl s3://kaggle-m5-filestore/input/
 #aws s3 cp resources/input/calendar.csv s3://kaggle-m5-filestore/input/
 #aws s3 cp resources/input/sales_train_validation.csv s3://kaggle-m5-filestore/input/
