@@ -70,25 +70,12 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
     @classmethod
     def _make_feature(cls, df):
-        # grouped rolling mean
-        # lags = [7, 28]
-        # wins = [7, 28]
-        # levels = ['item_id', 'store_id']
-        # for lag in lags:
-        #     for win in wins:
-        #         for level in levels:
-        #             df[f'grouped_lag_{level}_lag{lag}_win{win}'] = cls._calculate_grouped_rolling_mean(df, level, lag, win)
-
         # lag
-        # lags = [28 + 7 * i for i in range(5)]
         lags = [7, 28]
-        # lags = [28]
         for lag in lags:
             df[f'lag{lag}'] = cls._calculate_lag(df, lag)
 
         # rolling mean
-        # lags = [28 * i for i in range(1, 14)]
-        # wins = [28]
         lags = [7, 28]
         wins = [7, 28]
         for lag in lags:
@@ -96,22 +83,10 @@ class MekeSalesFeature(gokart.TaskOnKart):
                 df[f'rolling_mean_lag{lag}_win{win}'] = cls._calculate_rolling_mean(df, lag, win)
                 # df[f'rolling_std_lag{lag}_win{win}'] = cls._calculate_rolling_std(df, lag, win)
 
-        # shorter lag
-        # df['lag7'] = cls._calculate_lag(df, 7)
-        # df['lag_short_mean'] = cls._calculate_short_lag(df, stat='mean')
-        # df['lag_short_median'] = cls._calculate_short_lag(df, stat='median')
-        # df['lag_short_std'] = cls._calculate_short_lag(df, stat='std')
-        # df[f'rolling_mean_lag7_win28'] = cls._calculate_rolling_mean(df, 7, 28)
-        # df[f'rolling_mean_lag7_win7'] = cls._calculate_rolling_mean(df, 7, 7)
-
         # longer rolling mean
         df['rolling_mean_t60'] = cls._calculate_rolling_mean(df, 28, 60)
         df['rolling_mean_t90'] = cls._calculate_rolling_mean(df, 28, 90)
         df['rolling_mean_t180'] = cls._calculate_rolling_mean(df, 28, 180)
-
-        # sold out
-        # win = 60
-        # df[f'sold_out_{win}'] = cls._calculate_sold_out(df, win)
 
         return df
 
