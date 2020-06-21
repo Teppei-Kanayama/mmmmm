@@ -17,7 +17,8 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
 
     def requires(self):
         rmsse_weight_task = LoadInputData(filename='weights_validation.csv')
-        return dict(feature=self.feature_task, weight=rmsse_weight_task)
+        adversarial_weight_task = LoadInputData(filename='adversarial_weight.csv')
+        return dict(feature=self.feature_task, weight=rmsse_weight_task, adversarial_weight=adversarial_weight_task)
 
     def output(self):
         model = self.make_target(relative_file_path='model/lgb.pkl')
@@ -28,23 +29,29 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
     def run(self):
         data = self.load_data_frame('feature')
         weight = self.load_data_frame('weight')
-        model, feature_columns, feature_importance = self._run(data, weight)
+        adversarial_weight = self.load_data_frame('adversarial_weight')
+        model, feature_columns, feature_importance = self._run(data, weight, adversarial_weight)
         self.dump(model, 'model')
         self.dump(feature_columns, 'feature_columns')
         self.dump(feature_importance, 'feature_importance')
 
     @staticmethod
-    def _run(data: pd.DataFrame, weight: pd.DataFrame):
-        weight = weight[weight['Level_id'] == 'Level12']
-        weight['id'] = weight['Agg_Level_1'] + '_' + weight['Agg_Level_2']
-        weight = weight[['id', 'Weight']]
-        weight.loc[weight['Weight'] == 0, 'Weight'] = weight[weight['Weight'] != 0]['Weight'].min()
-        weight['Weight'] *= 100000000
-        weight['Weight'] = np.log(weight['Weight'])
+    def _run(data: pd.DataFrame, weight: pd.DataFrame, adversarial_weight):
+        data = pd.merge(data, adversarial_weight, how='left')
+        data['adversarial_score'] = data['adversarial_score'].fillna(0.5)
+        data['Weight'] = -np.log2(data['adversarial_score'])
+        data = data.drop('adversarial_score', axis=1)
+        data['Weight'] = data['Weight'].clip(0, -np.log2(0.5))
 
-        logger.info(data.shape)
-        data = pd.merge(data, weight)
-        logger.info(data.shape)
+        # weight = weight[weight['Level_id'] == 'Level12']
+        # weight['id'] = weight['Agg_Level_1'] + '_' + weight['Agg_Level_2']
+        # weight = weight[['id', 'Weight']]
+        # weight.loc[weight['Weight'] == 0, 'Weight'] = weight[weight['Weight'] != 0]['Weight'].min()
+        # weight['Weight'] *= 100000000
+        # weight['Weight'] = np.log(weight['Weight'])
+        # logger.info(data.shape)
+        # data = pd.merge(data, weight)
+        # logger.info(data.shape)
 
         y_train = data['demand']
         w_train = data['Weight']
