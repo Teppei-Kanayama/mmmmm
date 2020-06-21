@@ -14,7 +14,7 @@ logger = getLogger(__name__)
 class PreprocessSales(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    from_date: int = luigi.IntParameter()
+    # from_date: int = luigi.IntParameter()
     to_date: int = luigi.IntParameter()
     is_small: bool = luigi.BoolParameter()
 
@@ -24,14 +24,14 @@ class PreprocessSales(gokart.TaskOnKart):
     def run(self):
         required_columns = {'id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'} | set([f'd_{d}' for d in range(1, 1942)])
         data = self.load_data_frame(required_columns=required_columns)
-        output = self._run(data, self.from_date, self.to_date, self.is_small)
+        output = self._run(data, self.to_date, self.is_small)
         self.dump(output)
 
     @staticmethod
-    def _run(df: pd.DataFrame, from_date: int, to_date: int, is_small: bool) -> pd.DataFrame:
+    def _run(df: pd.DataFrame, to_date: int, is_small: bool) -> pd.DataFrame:
         if is_small:
             df = df.iloc[:3]
-        df = df.drop(["d_" + str(i + 1) for i in range(from_date - 1)], axis=1)
+        # df = df.drop(["d_" + str(i + 1) for i in range(from_date - 1)], axis=1)
         df['id'] = df['id'].str.replace('_evaluation', '')
         # df = df.reindex(columns=df.columns.tolist() + ["d_" + str(1942 + i) for i in range(28)])
         df = df.melt(id_vars=["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"], var_name='d', value_name='demand')
@@ -45,7 +45,8 @@ class MekeSalesFeature(gokart.TaskOnKart):
 
     sales_data_task = gokart.TaskInstanceParameter()  # 真のsalesデータ
     predicted_sales_data_task = gokart.TaskInstanceParameter()  # 予測されたsalesデータ
-    make_feature_to_date: int = luigi.IntParameter(default=None)
+    make_feature_from_date: int = luigi.IntParameter()
+    make_feature_to_date: int = luigi.IntParameter()
 
     def requires(self):
         return dict(sales=self.sales_data_task, predicted_sales=self.predicted_sales_data_task)
@@ -55,15 +56,16 @@ class MekeSalesFeature(gokart.TaskOnKart):
         predicted_sales = self.load_data_frame('predicted_sales')
 
         sales = pd.concat([sales, predicted_sales]).reset_index(drop=True)
-        output = self._run(sales, self.make_feature_to_date)
+        output = self._run(sales, self.make_feature_from_date, self.make_feature_to_date)
         self.dump(output)
 
     @classmethod
-    def _run(cls, df: pd.DataFrame, make_feature_to_date: int) -> pd.DataFrame:
+    def _run(cls, df: pd.DataFrame, make_feature_from_date: int, make_feature_to_date: int) -> pd.DataFrame:
         original_columns = df.columns
         future_sales_df = cls._make_future_sales(df, from_date=df['d'].max() + 1, to_date=make_feature_to_date)
         df = pd.concat([df, future_sales_df])
         df = cls._make_feature(df)
+        df = df[df['d'] >= make_feature_from_date]
         to_float32 = list(set(df.columns) - set(original_columns))
         df[to_float32] = df[to_float32].astype("float32")
         return df
@@ -87,7 +89,9 @@ class MekeSalesFeature(gokart.TaskOnKart):
         df['rolling_mean_t60'] = cls._calculate_rolling_mean(df, 28, 60)
         df['rolling_mean_t90'] = cls._calculate_rolling_mean(df, 28, 90)
         df['rolling_mean_t180'] = cls._calculate_rolling_mean(df, 28, 180)
-
+        # df['previous_one_year'] = cls._calculate_rolling_mean(df, 364, 28)
+        # df['previous_two_years'] = cls._calculate_rolling_mean(df, 364 * 2, 28)
+        # df['previous_three_years'] = cls._calculate_rolling_mean(df, 364 * 3, 28)
         return df
 
     @staticmethod
