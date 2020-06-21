@@ -4,7 +4,6 @@ import gokart
 import luigi
 import pandas as pd
 
-from m5_forecasting.adversarial_validation.adversarial_validation import FilterByAdversarialValidation
 from m5_forecasting.data.calendar import PreprocessCalendar
 from m5_forecasting.data.feature_engineering import MergeData, MakeFeature
 from m5_forecasting.data.sales import PreprocessSales, MekeSalesFeature
