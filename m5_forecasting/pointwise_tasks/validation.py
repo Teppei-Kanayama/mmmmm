@@ -56,7 +56,7 @@ class ValidatePointwise(gokart.TaskOnKart):
                     score_df=self.make_target(f'validation/score_df_{self.validate_from_date}_{self.validate_to_date}.csv'))
 
     def requires(self):
-        ground_truth_task = PreprocessSales(is_small=self.is_small, from_date=1, to_date=1000000)
+        ground_truth_task = PreprocessSales(is_small=self.is_small, to_date=1000000)
         prediction_load_tasks = [Load(from_date=t, to_date=t + self.interval) for t in
                                  range(self.validate_from_date, self.validate_to_date, self.interval)]
         sample_submission_task = LoadInputData(filename='sample_submission.csv')
