@@ -83,15 +83,13 @@ class MekeSalesFeature(gokart.TaskOnKart):
         for lag in lags:
             for win in wins:
                 df[f'rolling_mean_lag{lag}_win{win}'] = cls._calculate_rolling_mean(df, lag, win)
-                # df[f'rolling_std_lag{lag}_win{win}'] = cls._calculate_rolling_std(df, lag, win)
 
         # longer rolling mean
-        df['rolling_mean_t60'] = cls._calculate_rolling_mean(df, 28, 60)
-        df['rolling_mean_t90'] = cls._calculate_rolling_mean(df, 28, 90)
-        df['rolling_mean_t180'] = cls._calculate_rolling_mean(df, 28, 180)
-        # df['previous_one_year'] = cls._calculate_rolling_mean(df, 364, 28)
-        # df['previous_two_years'] = cls._calculate_rolling_mean(df, 364 * 2, 28)
-        # df['previous_three_years'] = cls._calculate_rolling_mean(df, 364 * 3, 28)
+        df['rolling_mean_t56'] = cls._calculate_rolling_mean(df, 28, 56)
+        df['rolling_mean_t91'] = cls._calculate_rolling_mean(df, 28, 91)
+        df['rolling_mean_t182'] = cls._calculate_rolling_mean(df, 28, 182)
+
+        df['previous_one_year'] = cls._calculate_rolling_mean(df, 364, 28)
         return df
 
     @staticmethod
