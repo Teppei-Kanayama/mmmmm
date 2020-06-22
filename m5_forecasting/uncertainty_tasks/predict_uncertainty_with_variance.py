@@ -14,7 +14,6 @@ class PredictUncertaintyWithVariance(gokart.TaskOnKart):
 
     def requires(self):
         accuracy_task = LoadInputData(filename='kkiller_first_public_notebook_under050_v5.csv')
-        # accuracy_task = LoadInputData(filename='submission_1499b9c5b60efee9f8358927876a8d26.csv')
         sales_data_task = LoadInputData(filename='sales_train_validation.csv')
         variance_task = CalculateVariance()
         return dict(accuracy=accuracy_task, sales=sales_data_task, variance=variance_task)
