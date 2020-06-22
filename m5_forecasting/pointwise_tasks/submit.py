@@ -4,17 +4,13 @@ from logging import getLogger
 import gokart
 import luigi
 import pandas as pd
-import numpy as np
 
 from m5_forecasting.data.load import LoadInputData
 
 
 logger = getLogger(__name__)
 
-
-VALIDATION_START_DATE = 1914
-EVALUATION_START_DATE = 1942
-DURATION = 28
+START_DATES = dict(validation=1914, evaluation=1942)
 
 
 class Load(gokart.TaskOnKart):
@@ -50,11 +46,21 @@ class SubmitPointwise(gokart.TaskOnKart):
         public_df = pd.concat(self.load('public_prediction'))
         private_df = pd.concat(self.load('private_prediction'))
         sample_submission = self.load_data_frame('submission')
-        test = public_df.assign(id=public_df.id + "_" + np.where(public_df.d < EVALUATION_START_DATE, "validation", "evaluation"),
-                                F="F" + (public_df.d - VALIDATION_START_DATE + 1 - DURATION * (public_df.d >= EVALUATION_START_DATE)).astype("str"))
-        submission = test.pivot(index="id", columns="F", values="demand").reset_index()[sample_submission.columns]
-        submission = pd.merge(sample_submission[['id']], submission, on=['id'], how='left').fillna(-1)
+
+        public_submission = self._process_submission(public_df, 'validation', sample_submission)
+        private_submission = self._process_submission(private_df, 'evaluation', sample_submission)
+        submission = pd.concat([public_submission, private_submission]).reset_index(drop=True)
+
+        logger.info(f'shape: {submission.shape}')
+        logger.info(f'shape: {sample_submission.shape}')
+        assert set(submission['id'].unique()) == set(sample_submission['id'].unique()), f'ID is invalid!'
+        assert set(submission.columns) == set(sample_submission.columns), 'columns is invalid!'
+
         self.dump(submission)
 
-
-# python main.py m5-forecasting.Submit --local-scheduler
+    @staticmethod
+    def _process_submission(df, term, sample_submission):
+        df['id'] = df['id'] + "_" + term
+        df['F'] = 'F' + (df['d'] - START_DATES[term] + 1).astype('str')
+        submission = df.pivot(index="id", columns="F", values="demand").reset_index()
+        return submission[sample_submission.columns]
