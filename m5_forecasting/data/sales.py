@@ -14,7 +14,6 @@ logger = getLogger(__name__)
 class PreprocessSales(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
-    # from_date: int = luigi.IntParameter()
     to_date: int = luigi.IntParameter()
     is_small: bool = luigi.BoolParameter()
 
@@ -29,11 +28,8 @@ class PreprocessSales(gokart.TaskOnKart):
 
     @staticmethod
     def _run(df: pd.DataFrame, to_date: int, is_small: bool) -> pd.DataFrame:
-        if is_small:
-            df = df.iloc[:3]
-        # df = df.drop(["d_" + str(i + 1) for i in range(from_date - 1)], axis=1)
+        df = df.iloc[:3] if is_small else df
         df['id'] = df['id'].str.replace('_evaluation', '')
-        # df = df.reindex(columns=df.columns.tolist() + ["d_" + str(1942 + i) for i in range(28)])
         df = df.melt(id_vars=["id", "item_id", "dept_id", "cat_id", "store_id", "state_id"], var_name='d', value_name='demand')
         df['d'] = df['d'].str[2:].astype('int64')
         df = df[df['d'] < to_date]
@@ -88,7 +84,6 @@ class MekeSalesFeature(gokart.TaskOnKart):
         df['rolling_mean_t56'] = cls._calculate_rolling_mean(df, 28, 56)
         df['rolling_mean_t91'] = cls._calculate_rolling_mean(df, 28, 91)
         df['rolling_mean_t182'] = cls._calculate_rolling_mean(df, 28, 182)
-
         df['previous_one_year'] = cls._calculate_rolling_mean(df, 364, 28)
         return df
 
