@@ -33,10 +33,10 @@ class SubmitUncertainty(gokart.TaskOnKart):
 
     @staticmethod
     def _make_submission(df: pd.DataFrame) -> pd.DataFrame:
-        df = pd.concat([df, df], axis=0, sort=False)
+        df = pd.concat([df, df], axis=0, sort=False)  # TODO: ここを直す
         df.reset_index(drop=True, inplace=True)
         df.loc[df.index >= len(df.index) // 2, "id"] = df.loc[df.index >= len(df.index) // 2, "id"].str.replace(
-            "_validation$", "_evaluation")
+            "_validation$", "_evaluation")  # TODO: ここの$はなんだ？？
         return df
 
 
