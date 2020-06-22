@@ -11,12 +11,12 @@ from m5_forecasting.utils.pandas_utils import get_uncertainty_ids
 
 class PredictUncertaintyWithVariance(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
+    sales_data_task = gokart.TaskInstanceParameter()
 
     def requires(self):
         accuracy_task = LoadInputData(filename='kkiller_first_public_notebook_under050_v5.csv')
-        sales_data_task = LoadInputData(filename='sales_train_validation.csv')
         variance_task = CalculateVariance()
-        return dict(accuracy=accuracy_task, sales=sales_data_task, variance=variance_task)
+        return dict(accuracy=accuracy_task, sales=self.sales_data_task, variance=variance_task)
 
     def run(self):
         accuracy = self.load_data_frame('accuracy')

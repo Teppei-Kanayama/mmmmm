@@ -10,33 +10,28 @@ class SubmitUncertainty(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
 
     def output(self):
-        return self.make_target('submission_uncertainty.csv', processor=RoughCsvFileProcessor())
+        return self.make_target('submission_uncertainty.csv')
 
     def requires(self):
-        uncertainty_with_variance_task = PredictUncertaintyWithVariance()
+        uncertainty_validation_task = PredictUncertaintyWithVariance(sales_data_task= LoadInputData(filename='sales_train_validation.csv'))
+        uncertainty_evaluation_task = PredictUncertaintyWithVariance(sales_data_task= LoadInputData(filename='sales_train_evaluation.csv'))
         sample_submission_task = LoadInputData(filename='sample_submission_uncertaity.csv')
-        return dict(uncertainty_with_variance=uncertainty_with_variance_task,
+        return dict(uncertainty_validation=uncertainty_validation_task,
+                    uncertainty_evaluation=uncertainty_evaluation_task,
                     sample=sample_submission_task)
 
     def run(self):
-        score_v = self.load_data_frame('uncertainty_with_variance')
+        score_validataion = self.load_data_frame('uncertainty_validation')
+        score_evaluation = self.load_data_frame('uncertainty_evaluation')
         sample = self.load_data_frame('sample')
-        output = self._run(score_v)
+        output = self._make_submission(score_validataion, score_evaluation)
         assert output.shape == sample.shape
         self.dump(output)
 
-    @classmethod
-    def _run(cls, score_v) -> pd.DataFrame:
-        score = score_v
-        df = cls._make_submission(score)
-        return df
-
     @staticmethod
-    def _make_submission(df: pd.DataFrame) -> pd.DataFrame:
-        df = pd.concat([df, df], axis=0, sort=False)  # TODO: ここを直す
-        df.reset_index(drop=True, inplace=True)
-        df.loc[df.index >= len(df.index) // 2, "id"] = df.loc[df.index >= len(df.index) // 2, "id"].str.replace(
-            "_validation$", "_evaluation")  # TODO: ここの$はなんだ？？
+    def _make_submission(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
+        df = pd.concat([df1, df2])
+        df = df.reset_index(drop=True)
         return df
 
 
