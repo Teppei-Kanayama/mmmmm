@@ -60,6 +60,7 @@ class MekeSalesFeature(gokart.TaskOnKart):
         original_columns = df.columns
         future_sales_df = cls._make_future_sales(df, from_date=df['d'].max() + 1, to_date=make_feature_to_date)
         df = pd.concat([df, future_sales_df])
+        df = df[df['d'] >= make_feature_from_date - 220]
         df = cls._make_feature(df)
         df = df[df['d'] >= make_feature_from_date]
         to_float32 = list(set(df.columns) - set(original_columns))
@@ -84,7 +85,6 @@ class MekeSalesFeature(gokart.TaskOnKart):
         df['rolling_mean_t56'] = cls._calculate_rolling_mean(df, 28, 56)
         df['rolling_mean_t91'] = cls._calculate_rolling_mean(df, 28, 91)
         df['rolling_mean_t182'] = cls._calculate_rolling_mean(df, 28, 182)
-        df['previous_one_year'] = cls._calculate_rolling_mean(df, 364, 28)
         return df
 
     @staticmethod
