@@ -16,7 +16,7 @@ class PredictUncertaintyWithVariance(gokart.TaskOnKart):
     phase: str = luigi.Parameter()
 
     def requires(self):
-        accuracy_task = LoadInputData(filename='kkiller_first_public_notebook_under050_v5.csv')
+        accuracy_task = LoadInputData(filename='submission_0.525.csv')
         sales_data_task = LoadInputData(filename=f'sales_train_{self.phase}.csv')
         variance_task = CalculateVariance(phase=self.phase)
         return dict(accuracy=accuracy_task, sales=sales_data_task, variance=variance_task)
