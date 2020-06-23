@@ -13,8 +13,8 @@ class SubmitUncertainty(gokart.TaskOnKart):
         return self.make_target('submission_uncertainty.csv')
 
     def requires(self):
-        uncertainty_validation_task = PredictUncertaintyWithVariance(sales_data_task= LoadInputData(filename='sales_train_validation.csv'))
-        uncertainty_evaluation_task = PredictUncertaintyWithVariance(sales_data_task= LoadInputData(filename='sales_train_evaluation.csv'))
+        uncertainty_validation_task = PredictUncertaintyWithVariance(sales_data_task=LoadInputData(filename='sales_train_validation.csv'))
+        uncertainty_evaluation_task = PredictUncertaintyWithVariance(sales_data_task=LoadInputData(filename='sales_train_evaluation.csv'))
         sample_submission_task = LoadInputData(filename='sample_submission_uncertaity.csv')
         return dict(uncertainty_validation=uncertainty_validation_task,
                     uncertainty_evaluation=uncertainty_evaluation_task,

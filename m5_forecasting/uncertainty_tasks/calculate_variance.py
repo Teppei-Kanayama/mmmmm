@@ -21,7 +21,7 @@ class CalculateVariance(gokart.TaskOnKart):
     interval: int = luigi.IntParameter()
 
     def requires(self):
-        ground_truth_task = PreprocessSales(is_small=self.is_small)
+        ground_truth_task = PreprocessSales(to_date=self.valiance_to_date, is_small=self.is_small)
         prediction_load_tasks = [Load(from_date=t, to_date=t + self.interval)
                                  for t in range(self.variance_from_date, self.variance_to_date, self.interval)]
         return dict(ground_truth=ground_truth_task, predict=prediction_load_tasks)
