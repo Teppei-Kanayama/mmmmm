@@ -16,6 +16,7 @@ class CalculateVariance(gokart.TaskOnKart):
 
     is_small: bool = luigi.BoolParameter()
 
+    phase: str = luigi.Parameter()
     variance_from_date: int = luigi.IntParameter()
     variance_to_date: int = luigi.IntParameter()
     interval: int = luigi.IntParameter()
@@ -29,19 +30,19 @@ class CalculateVariance(gokart.TaskOnKart):
     def run(self):
         ground_truth = self.load_data_frame('ground_truth')
         prediction = pd.concat(self.load('predict'))
-        output = self._run(ground_truth, prediction)
+        output = self._run(ground_truth, prediction, self.phase)
         self.dump(output)
 
     @classmethod
-    def _run(cls, ground_truth: pd.DataFrame, prediction: pd.DataFrame) -> pd.DataFrame:
+    def _run(cls, ground_truth: pd.DataFrame, prediction: pd.DataFrame, phase: str) -> pd.DataFrame:
         ground_truth["_all_"] = "Total"
         prediction["_all_"] = "Total"
-        variance_list = [cls._calculate_variance(level, ground_truth, prediction) for level in LEVELS]
+        variance_list = [cls._calculate_variance(level, ground_truth, prediction, phase) for level in LEVELS]
         variance = pd.concat(variance_list)
         return variance
 
     @staticmethod
-    def _calculate_variance(level: List, ground_truth: pd.DataFrame, prediction: pd.DataFrame) -> pd.DataFrame:
+    def _calculate_variance(level: List, ground_truth: pd.DataFrame, prediction: pd.DataFrame, phase: str) -> pd.DataFrame:
         ground_truth_agg = ground_truth.groupby(level + ['d'], as_index=False).agg({'demand': 'sum'})
         prediction_agg = prediction.groupby(level + ['d'], as_index=False).agg({'demand': 'sum'})
         df = pd.merge(prediction_agg, ground_truth_agg, on=level + ['d'], suffixes=['_pred', '_gt'])
@@ -55,5 +56,5 @@ class CalculateVariance(gokart.TaskOnKart):
         variance_df['percentile_diff'] = variance_df['sigma'] * variance_df['n_sigma']
         for lev in level:
             variance_df = variance_df.rename(columns={f"('{lev}', '')": lev})
-        variance_df['id'] = get_uncertainty_ids(variance_df, level)
+        variance_df['id'] = get_uncertainty_ids(variance_df, level, phase)
         return variance_df[['id', 'percentile_diff']]

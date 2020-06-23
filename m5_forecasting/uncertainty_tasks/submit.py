@@ -13,18 +13,19 @@ class SubmitUncertainty(gokart.TaskOnKart):
         return self.make_target('submission_uncertainty.csv')
 
     def requires(self):
-        uncertainty_validation_task = PredictUncertaintyWithVariance(sales_data_task=LoadInputData(filename='sales_train_validation.csv'))
-        uncertainty_evaluation_task = PredictUncertaintyWithVariance(sales_data_task=LoadInputData(filename='sales_train_evaluation.csv'))
+        uncertainty_validation_task = PredictUncertaintyWithVariance(phase='validation')
+        uncertainty_evaluation_task = PredictUncertaintyWithVariance(phase='evaluation')
         sample_submission_task = LoadInputData(filename='sample_submission_uncertainty.csv')
         return dict(uncertainty_validation=uncertainty_validation_task,
                     uncertainty_evaluation=uncertainty_evaluation_task,
                     sample=sample_submission_task)
 
     def run(self):
-        score_validataion = self.load_data_frame('uncertainty_validation')
+        score_validation = self.load_data_frame('uncertainty_validation')
         score_evaluation = self.load_data_frame('uncertainty_evaluation')
         sample = self.load_data_frame('sample')
-        output = self._make_submission(score_validataion, score_evaluation)
+        output = self._make_submission(score_validation, score_evaluation)
+        import pdb; pdb.set_trace()
         assert output.shape == sample.shape
         self.dump(output)
 

@@ -21,10 +21,10 @@ def main():
     variance_from_date = variance_to_date - 7 * variance_duration
     interval = int(sys.argv[1])
 
-    run_pointwise_model(train_to_date=variance_from_date,
-                        validate_from_date=variance_from_date,
-                        validate_to_date=variance_to_date,
-                        interval=interval)
+    # run_pointwise_model(train_to_date=variance_from_date,
+    #                     validate_from_date=variance_from_date,
+    #                     validate_to_date=variance_to_date,
+    #                     interval=interval)
 
     # uncertainty
     subprocess.run(
