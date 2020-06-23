@@ -25,7 +25,6 @@ class SubmitUncertainty(gokart.TaskOnKart):
         score_evaluation = self.load_data_frame('uncertainty_evaluation')
         sample = self.load_data_frame('sample')
         output = self._make_submission(score_validation, score_evaluation)
-        import pdb; pdb.set_trace()
         assert output.shape == sample.shape
         self.dump(output)
 
