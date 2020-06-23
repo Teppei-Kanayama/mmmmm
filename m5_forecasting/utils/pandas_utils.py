@@ -15,5 +15,5 @@ def get_uncertainty_ids(df: pd.DataFrame, level: List[str], surfix: str) -> List
         return [f'{lev1}_{lev2}_{q:.3f}_{surfix}' for lev1, lev2, q in
                 zip(df[level[0]].values, df[level[1]].values, df['percentile'].values)]
     elif level[0] == 'id':
-        return [f"{lev}_{q:.3f}_{surfix}" for lev, q in zip(df['id'].values, df['percentile'])]
+        return [f"{lev.replace(f'_{surfix}', '')}_{q:.3f}_{surfix}" for lev, q in zip(df['id'].values, df['percentile'])]
     return [f"{lev}_X_{q:.3f}_{surfix}" for lev, q in zip(df[level[0]].values, df['percentile'].values)]
