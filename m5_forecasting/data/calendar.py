@@ -38,15 +38,30 @@ class PreprocessCalendar(gokart.TaskOnKart):
     def _run(df: pd.DataFrame) -> pd.DataFrame:
         df = df.assign(d=df['d'].str[2:].astype(int))
 
-        # 'event_name_1', 'event_type_1'を label encodeする
-        to_ordinal = ["event_name_1", "event_type_1"]
-        df[to_ordinal] = df[to_ordinal].fillna("1")
-        df[to_ordinal] = OrdinalEncoder(dtype="int").fit_transform(df[to_ordinal]) + 1
+        event_columns = ["event_name_1", "event_type_1"]
+        df[event_columns] = df[event_columns].fillna('')
 
-        # イベントの前後を表す特徴量 -> 今のところ意味なし
-        # for i in range(7):
-        #     df[f'event_name_1_{i}'] = df['event_name_1'].shift(i)
-        #     df[f'event_name_1_-{i}'] = df['event_name_1'].shift(-i)
+        # NBA feature
+        NBA_DAYS = list(range(123, 136)) + list(range(501, 511)) + list(range(860, 875)) + list(range(1224, 1235)) \
+                   + list(range(1588, 1601)) + list(range(1952, 1970))
+        nba_df = pd.DataFrame(dict(d=NBA_DAYS, nba=1))
+        df = pd.merge(df, nba_df, how='left').fillna(0)
+        df.loc[df['event_name_1'].str.contains('NBA'), 'event_type_1'] = ''
+        df.loc[df['event_name_1'].str.contains('NBA'), 'event_name_1'] = ''
+
+        # Ramadan feature
+        RAMADAN_DAYS = list(range(185, 185+31)) + list(range(589, 589+31)) + list(range(893, 893+31)) \
+                       + list(range(1248, 1248+31)) + list(range(1602, 1602+31)) + list(range(1957, 1957+31))
+        ramadan_df = pd.DataFrame(dict(d=RAMADAN_DAYS, ramadan=1))
+        df = pd.merge(df, ramadan_df, how='left').fillna(0)
+
+        # merge event1 and evnet2
+        df.loc[df['d'] == 1234, 'event_name_1'] = df.loc[df['d'] == 1234, 'event_name_2']
+        df.loc[df['d'] == 1234, 'event_type_1'] = df.loc[df['d'] == 1234, 'event_type_2']
+        df.loc[df['d'] == 1969, 'event_name_1'] = df.loc[df['d'] == 1969, 'event_name_2']
+        df.loc[df['d'] == 1969, 'event_type_1'] = df.loc[df['d'] == 1969, 'event_type_2']
+
+        df[event_columns] = OrdinalEncoder(dtype="int").fit_transform(df[event_columns]) + 1
 
         # 日付に関する特徴量を追加する
         df['date'] = pd.to_datetime(df['date'])
@@ -54,11 +69,9 @@ class PreprocessCalendar(gokart.TaskOnKart):
         df['quarter'] = df['date'].dt.quarter
         df['day'] = df['date'].dt.day
 
-        to_int8 = ["wday", "month", "snap_CA", "snap_TX", "snap_WI", 'week_of_year', 'quarter', 'day'] + to_ordinal
+        to_int8 = ["wday", "month", "snap_CA", "snap_TX", "snap_WI", 'week_of_year', 'quarter', 'day', 'nba', 'ramadan'] + event_columns
         df[to_int8] = df[to_int8].astype("int8")
 
         # dateはd, weekdayはwdayと同じ情報なので落とす。
-        # event_name_2, event_type_2はほぼ空なので使わない。
         df = df.drop(["date", "weekday", "event_name_2", "event_type_2"], axis=1)
         return df
-
