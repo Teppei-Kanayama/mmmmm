@@ -42,7 +42,7 @@ class TrainPointwiseLGBM(gokart.TaskOnKart):
         min_data_in_leaf = 2 ** 12 - 1 if x_train['id'].nunique() > 10 else None
         lgb_params = {'boosting_type': 'gbdt',   # 固定
                       'objective': 'tweedie',
-                      'tweedie_variance_power': 1.1,   # TODO: CVで決める
+                      'tweedie_variance_power': 1.3,   # TODO: CVで決める
                       'metric': 'rmse',  # 固定。なんでもいい
                       'subsample': 0.5,  # TODO: 重要, bagging_fractionと同じ。
                       'subsample_freq': 1,  # TODO: CVで決める bagging_freqと同じ。
