@@ -14,11 +14,6 @@ from m5_forecasting.pointwise_tasks.train import TrainPointwiseModel
 
 logger = getLogger(__name__)
 
-# best score
-# 1858_1886 0.615918893857194
-# 1886_1914 0.564103940972861
-# public 0.51361
-
 
 class EmptySalesTask(gokart.TaskOnKart):
     task_namespace = 'm5-forecasting'
