@@ -28,9 +28,9 @@ def main():
 
     # trian pointwise
     subprocess.run(['python', 'main.py', 'm5-forecasting.TrainPointwiseModel', f'--train-to-date={train_to_date}', '--local-scheduler'])
-    predict_and_validate(train_to_date, validate_term1[0], validate_term1[1], interval)
-    predict_and_validate(train_to_date, validate_term2[0], validate_term2[1], interval)
     predict_and_validate(train_to_date, validate_term3[0], validate_term3[1], interval)
+    predict_and_validate(train_to_date, validate_term2[0], validate_term2[1], interval)
+    predict_and_validate(train_to_date, validate_term1[0], validate_term1[1], interval)
 
 
 if __name__ == '__main__':
