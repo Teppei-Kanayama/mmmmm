@@ -18,7 +18,7 @@ def main():
     interval = int(sys.argv[1])
 
     # train
-    train_to_date = 1914  # TODO: 1942
+    train_to_date = 1942
     subprocess.run(['python', 'main.py', 'm5-forecasting.TrainPointwiseModel', f'--train-to-date={train_to_date}',
                     '--local-scheduler'])
 
