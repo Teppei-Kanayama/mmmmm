@@ -17,7 +17,7 @@ def run_pointwise_model(train_to_date, validate_from_date, validate_to_date, int
 
 def main():
     variance_duration = 10
-    variance_to_date = 1914  # TODO: 1942
+    variance_to_date = 1942
     variance_from_date = variance_to_date - 7 * variance_duration
     interval = int(sys.argv[1])
 

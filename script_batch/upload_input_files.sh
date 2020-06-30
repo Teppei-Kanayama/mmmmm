@@ -2,7 +2,8 @@
 
 set -euC
 
-aws s3 cp resources/input/submission_0.525.csv s3://kaggle-m5-filestore/input/
+aws s3 cp resources/input/submission_3e5d4f02010ef437654e36aa6829bf98.csv s3://kaggle-m5-filestore/input/
+#aws s3 cp resources/input/submission_0.525.csv s3://kaggle-m5-filestore/input/
 #aws s3 cp resources/input/kkiller_first_public_notebook_under050_v5.csv s3://kaggle-m5-filestore/input/
 #aws s3 cp resources/input/adversarial_weight.csv s3://kaggle-m5-filestore/input/
 #aws s3 cp resources/input/sales_train_evaluation.csv s3://kaggle-m5-filestore/input/
